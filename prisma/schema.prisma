@@ -1,0 +1,148 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum TokenType {
+  EMAIL_VERIFY
+  PASSWORD_RESET
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+}
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  passwordHash    String
+  name            String
+  role            Role      @default(USER)
+  emailVerifiedAt DateTime?
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  lastLoginAt     DateTime?
+
+  sessions           Session[]
+  verificationTokens VerificationToken[]
+  conversations       Conversation[]
+  usageLogs           UsageLog[]
+  dailyUsageCounters   UserDailyUsage[]
+
+  @@index([role])
+  @@index([isActive])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  userAgent String?
+  ipAddress String?
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model VerificationToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  type      TokenType
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, type])
+}
+
+model Conversation {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String    @default("New conversation")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  messages  Message[]
+
+  @@index([userId, updatedAt])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           MessageRole
+  content        String       @db.Text
+  createdAt      DateTime     @default(now())
+  usageLog       UsageLog?
+
+  @@index([conversationId, createdAt])
+}
+
+model UsageLog {
+  id               String   @id @default(cuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messageId        String   @unique
+  message          Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  promptTokens     Int
+  completionTokens Int
+  totalTokens      Int
+  model            String
+  createdAt        DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
+}
+
+// userId + date (UTC calendar day) 単位のレート制限カウンタ。原子的な行更新で並行リクエストに対応する。
+model UserDailyUsage {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date         DateTime @db.Date
+  requestCount Int      @default(0)
+  tokenCount   Int      @default(0)
+
+  @@unique([userId, date])
+}
+
+// 分単位のグローバルレート制限バケット（RPM/TPM）。
+model GlobalRateBucket {
+  id           String   @id @default(cuid())
+  bucketStart  DateTime @unique
+  requestCount Int      @default(0)
+  tokenCount   Int      @default(0)
+}
+
+// 日単位のグローバル利用量（RPD）。
+model GlobalDailyUsage {
+  date         DateTime @id @db.Date
+  requestCount Int      @default(0)
+  tokenCount   Int      @default(0)
+}
+
+// 管理画面から編集可能な単一行のレート制限設定。
+model RateLimitConfig {
+  id                  Int      @id @default(1)
+  globalRpmLimit      Int      @default(8)
+  globalTpmLimit      Int      @default(200000)
+  globalRpdLimit      Int      @default(200)
+  userDailyReqLimit   Int      @default(30)
+  userDailyTokenLimit Int      @default(20000)
+  updatedAt           DateTime @updatedAt
+}
