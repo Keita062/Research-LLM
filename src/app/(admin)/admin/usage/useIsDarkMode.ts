@@ -9,12 +9,16 @@ import { useEffect, useState } from "react";
  * media query so chart components can pick the light/dark step of a hue
  * from the dataviz palette explicitly.
  */
+function getIsDark(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches;
+}
+
 export function useIsDarkMode(): boolean {
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState(getIsDark);
 
   useEffect(() => {
     const mql = window.matchMedia("(prefers-color-scheme: dark)");
-    setIsDark(mql.matches);
     const listener = (e: MediaQueryListEvent) => setIsDark(e.matches);
     mql.addEventListener("change", listener);
     return () => mql.removeEventListener("change", listener);
