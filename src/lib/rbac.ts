@@ -1,5 +1,6 @@
 import "server-only";
-import type { SessionUser } from "@/lib/session";
+import { redirect } from "next/navigation";
+import { getSession, type SessionUser } from "@/lib/session";
 
 /**
  * Returns the current logged-in user, or redirects to /login if there is none,
@@ -9,7 +10,11 @@ import type { SessionUser } from "@/lib/session";
  * other agents (Chat, Admin) depend on it.
  */
 export async function requireUser(): Promise<SessionUser> {
-  throw new Error("rbac.requireUser: not implemented yet");
+  const session = await getSession();
+  if (!session) {
+    redirect("/login");
+  }
+  return session.user;
 }
 
 /**
@@ -18,5 +23,9 @@ export async function requireUser(): Promise<SessionUser> {
  * other agents (Admin) depend on it.
  */
 export async function requireAdmin(): Promise<SessionUser> {
-  throw new Error("rbac.requireAdmin: not implemented yet");
+  const user = await requireUser();
+  if (user.role !== "ADMIN") {
+    redirect("/chat");
+  }
+  return user;
 }
