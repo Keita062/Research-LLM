@@ -9,7 +9,7 @@
 - Next.js 16 (App Router, TypeScript, Turbopack)
 - PostgreSQL + Prisma 7（`@prisma/adapter-pg` ドライバアダプタ経由）
 - Google Gemini API (`@google/genai`)
-- Resend（メール送信、開発中は `EMAIL_MODE=console` でコンソール出力に切替可能）
+- Gmail SMTP（`nodemailer`経由でメール送信、開発中は `EMAIL_MODE=console` でコンソール出力に切替可能）
 - Tailwind CSS / Recharts
 
 ## セットアップ
@@ -42,8 +42,9 @@ cp .env.example .env
 |---|---|
 | `DATABASE_URL` | Postgres接続文字列（デフォルトでdocker-compose構成に一致） |
 | `GEMINI_API_KEY` | [Google AI Studio](https://aistudio.google.com/apikey) で発行。未設定でもアプリ自体は起動・動作するが、チャット送信時に「Gemini APIキーが未設定です」というエラーになる |
-| `EMAIL_MODE` | `console`（デフォルト、確認メール等のリンクをサーバーログに出力）／ `resend`（実際にResend経由でメール送信） |
-| `RESEND_API_KEY` | [Resend](https://resend.com/api-keys) で発行。`EMAIL_MODE=resend` の場合に必要 |
+| `EMAIL_MODE` | `console`（デフォルト、確認メール等のリンクをサーバーログに出力）／ `gmail`（実際にGmail SMTP経由でメール送信） |
+| `GMAIL_USER` / `GMAIL_APP_PASSWORD` | 送信用Gmailアカウントのアドレスと[アプリパスワード](https://myaccount.google.com/apppasswords)（2段階認証を有効にした上で発行）。`EMAIL_MODE=gmail` の場合に必要 |
+| `GMAIL_FROM_EMAIL` | メールの送信元表示（例: `Lab Chatbot <your-address@gmail.com>`）。省略時は`GMAIL_USER`がそのまま使われる |
 | `RATE_LIMIT_*` | 初回seed時の`RateLimitConfig`初期値。以降は管理画面(`/admin/usage`)から変更可能。**Gemini無料枠の実際の数値は変動するため、必ず [aistudio.google.com/rate-limit](https://aistudio.google.com/rate-limit) で確認し、安全マージンを見て設定すること** |
 | `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` / `SEED_ADMIN_NAME` | 初回seedで作成される最初の管理者アカウント |
 
@@ -66,7 +67,7 @@ http://localhost:3000 にアクセスします。
 
 ## APIキーを後から設定する場合
 
-`GEMINI_API_KEY` / `RESEND_API_KEY` を取得したら `.env` に追記し（`EMAIL_MODE=resend` に変更するとメールも実送信になります）、開発サーバーを再起動してください。それまではGemini連携以外の機能（アカウント作成・ログイン・パスワード変更・管理画面など）は問題なく動作します。
+`GEMINI_API_KEY` / `GMAIL_USER` / `GMAIL_APP_PASSWORD` を取得したら `.env` に追記し（`EMAIL_MODE=gmail` に変更するとメールも実送信になります）、開発サーバーを再起動してください。それまではGemini連携以外の機能（アカウント作成・ログイン・パスワード変更・管理画面など）は問題なく動作します。
 
 ## 主な画面
 

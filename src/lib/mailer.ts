@@ -1,15 +1,21 @@
 import "server-only";
-import { Resend } from "resend";
+import nodemailer, { type Transporter } from "nodemailer";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 const EMAIL_MODE = process.env.EMAIL_MODE ?? "console";
 
-let resendClient: Resend | null = null;
-function getResendClient(): Resend {
-  if (!resendClient) {
-    resendClient = new Resend(process.env.RESEND_API_KEY);
+let gmailTransport: Transporter | null = null;
+function getGmailTransport(): Transporter {
+  if (!gmailTransport) {
+    gmailTransport = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_APP_PASSWORD,
+      },
+    });
   }
-  return resendClient;
+  return gmailTransport;
 }
 
 type SendArgs = {
@@ -21,12 +27,12 @@ type SendArgs = {
 
 /**
  * Sends an email respecting EMAIL_MODE. In "console" mode it just logs the content
- * (used for local dev without a Resend account). In "resend" mode it calls the Resend
- * API with a small retry helper. Never throws — failures are logged only, per NFR-04,
+ * (used for local dev without Gmail credentials). In "gmail" mode it sends via Gmail
+ * SMTP with a small retry helper. Never throws — failures are logged only, per NFR-04,
  * so the calling Server Action still succeeds.
  */
 async function sendEmail({ to, subject, html, consoleLabel }: SendArgs): Promise<void> {
-  if (EMAIL_MODE !== "resend") {
+  if (EMAIL_MODE !== "gmail") {
     console.log(`[mailer] (console mode) ${consoleLabel} -> ${to}`);
     console.log(html);
     return;
@@ -38,15 +44,12 @@ async function sendEmail({ to, subject, html, consoleLabel }: SendArgs): Promise
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
-      const result = await getResendClient().emails.send({
-        from: process.env.RESEND_FROM_EMAIL ?? "Lab Chatbot <onboarding@resend.dev>",
+      await getGmailTransport().sendMail({
+        from: process.env.GMAIL_FROM_EMAIL ?? process.env.GMAIL_USER,
         to,
         subject,
         html,
       });
-      if (result.error) {
-        throw new Error(result.error.message ?? "Resend API error");
-      }
       return;
     } catch (err) {
       lastError = err;
