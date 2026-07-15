@@ -13,6 +13,13 @@ export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hasSession = request.cookies.has(SESSION_COOKIE_NAME);
 
+  if (pathname === "/") {
+    const url = request.nextUrl.clone();
+    url.pathname = hasSession ? "/chat" : "/login";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+
   const isProtected = PROTECTED_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
   );

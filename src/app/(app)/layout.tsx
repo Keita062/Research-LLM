@@ -30,9 +30,19 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
             アカウント
           </Link>
         </nav>
-        <span className="text-sm text-zinc-500 dark:text-zinc-400">
-          {user.name} 様
-        </span>
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-zinc-500 dark:text-zinc-400">
+            {user.name} 様
+          </span>
+          <form action="/api/auth/logout" method="POST">
+            <button
+              type="submit"
+              className="text-sm font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+            >
+              ログアウト
+            </button>
+          </form>
+        </div>
       </header>
       <main className="flex flex-1 flex-col overflow-hidden">{children}</main>
     </div>

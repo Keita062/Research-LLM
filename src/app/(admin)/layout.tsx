@@ -42,8 +42,18 @@ export default async function AdminLayout({
               </Link>
             </nav>
           </div>
-          <div className="text-sm text-[#898781]">
-            {admin.name}（{admin.email}）
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-[#898781]">
+              {admin.name}（{admin.email}）
+            </span>
+            <form action="/api/auth/logout" method="POST">
+              <button
+                type="submit"
+                className="text-sm font-medium text-[#52514e] transition-colors hover:text-[#0b0b0b] dark:text-[#c3c2b7] dark:hover:text-white"
+              >
+                ログアウト
+              </button>
+            </form>
           </div>
         </div>
       </header>
