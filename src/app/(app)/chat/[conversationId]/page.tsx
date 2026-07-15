@@ -23,7 +23,12 @@ export default async function ConversationPage({
       userId: true,
       messages: {
         orderBy: { createdAt: "asc" },
-        select: { id: true, role: true, content: true },
+        select: {
+          id: true,
+          role: true,
+          content: true,
+          attachments: { select: { id: true, fileName: true, mimeType: true } },
+        },
       },
     },
   });

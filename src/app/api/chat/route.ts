@@ -9,21 +9,43 @@ import {
   type ChatHistoryItem,
   type GeminiUsage,
 } from "@/lib/gemini";
+import {
+  classifyAttachment,
+  normalizedMimeType,
+  MAX_ATTACHMENT_BYTES,
+  MAX_ATTACHMENTS_PER_MESSAGE,
+  type StoredAttachment,
+} from "@/lib/attachments";
 
 export const runtime = "nodejs";
 
 const MAX_MESSAGE_LENGTH = 8000;
 
 /**
- * Rough pre-flight token estimate (message + running history), padded with a
- * fudge factor since we don't know the reply length up front. Corrected
- * afterwards via reconcileUsage() once Gemini returns real usageMetadata —
- * never trust client-supplied token counts.
+ * Rough pre-flight token estimate (message + running history + attachments),
+ * padded with a fudge factor since we don't know the reply length up front.
+ * Corrected afterwards via reconcileUsage() once Gemini returns real
+ * usageMetadata — never trust client-supplied token counts. Image tokens use
+ * Gemini's flat per-image estimate; text-ish attachments (CSV/Excel) are
+ * approximated from their raw byte size since the real extracted-text length
+ * isn't known until send time.
  */
-function estimateTokens(message: string, historyContents: string[]): number {
+function estimateTokens(
+  message: string,
+  historyContents: string[],
+  newAttachments: StoredAttachment[]
+): number {
   const totalChars = message.length + historyContents.reduce((sum, c) => sum + c.length, 0);
   const base = Math.ceil(totalChars / 4);
-  return base + Math.ceil(base * 0.25) + 50;
+  const attachmentTokens = newAttachments.reduce((sum, a) => {
+    const kind = classifyAttachment(a.fileName, a.mimeType);
+    return sum + (kind === "image" ? 260 : Math.ceil(a.data.byteLength / 4));
+  }, 0);
+  return base + Math.ceil(base * 0.25) + attachmentTokens + 50;
+}
+
+function attachmentErrorMessage(fileName: string): string {
+  return `「${fileName}」は対応していない形式です。画像(PNG/JPEG/WebP/GIF)、CSV、Excel(.xlsx)のみ添付できます。`;
 }
 
 function rateLimitMessage(reason: RateLimitReason): string {
@@ -56,9 +78,9 @@ export async function POST(request: NextRequest) {
   }
   const { user } = session;
 
-  let body: unknown;
+  let formData: FormData;
   try {
-    body = await request.json();
+    formData = await request.formData();
   } catch {
     return NextResponse.json(
       { error: "bad_request", message: "リクエストの形式が不正です。" },
@@ -66,18 +88,26 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const parsed = body as { conversationId?: unknown; message?: unknown } | null;
-  const conversationId = typeof parsed?.conversationId === "string" ? parsed.conversationId : null;
-  const rawMessage = typeof parsed?.message === "string" ? parsed.message : null;
+  const conversationId = formData.get("conversationId");
+  const rawMessage = formData.get("message");
+  const files = formData.getAll("files").filter((f): f is File => f instanceof File);
 
-  if (!conversationId || !rawMessage || !rawMessage.trim()) {
+  if (typeof conversationId !== "string" || !conversationId) {
     return NextResponse.json(
-      { error: "bad_request", message: "メッセージを入力してください。" },
+      { error: "bad_request", message: "会話が指定されていません。" },
       { status: 400 }
     );
   }
 
-  const message = rawMessage.trim();
+  const message = typeof rawMessage === "string" ? rawMessage.trim() : "";
+
+  if (!message && files.length === 0) {
+    return NextResponse.json(
+      { error: "bad_request", message: "メッセージまたは添付ファイルを入力してください。" },
+      { status: 400 }
+    );
+  }
+
   if (message.length > MAX_MESSAGE_LENGTH) {
     return NextResponse.json(
       {
@@ -88,6 +118,43 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  if (files.length > MAX_ATTACHMENTS_PER_MESSAGE) {
+    return NextResponse.json(
+      {
+        error: "too_many_attachments",
+        message: `添付ファイルは${MAX_ATTACHMENTS_PER_MESSAGE}件までです。`,
+      },
+      { status: 400 }
+    );
+  }
+
+  const newAttachments: StoredAttachment[] = [];
+  for (const file of files) {
+    const kind = classifyAttachment(file.name, file.type);
+    if (!kind) {
+      return NextResponse.json(
+        { error: "unsupported_attachment", message: attachmentErrorMessage(file.name) },
+        { status: 400 }
+      );
+    }
+    if (file.size > MAX_ATTACHMENT_BYTES) {
+      return NextResponse.json(
+        {
+          error: "attachment_too_large",
+          message: `「${file.name}」のサイズが大きすぎます(上限${Math.floor(
+            MAX_ATTACHMENT_BYTES / (1024 * 1024)
+          )}MB)。`,
+        },
+        { status: 400 }
+      );
+    }
+    newAttachments.push({
+      fileName: file.name,
+      mimeType: normalizedMimeType(kind, file.type),
+      data: Buffer.from(await file.arrayBuffer()),
+    });
+  }
+
   const conversation = await prisma.conversation.findUnique({
     where: { id: conversationId },
     select: {
@@ -96,7 +163,11 @@ export async function POST(request: NextRequest) {
       title: true,
       messages: {
         orderBy: { createdAt: "asc" },
-        select: { role: true, content: true },
+        select: {
+          role: true,
+          content: true,
+          attachments: { select: { fileName: true, mimeType: true, data: true } },
+        },
       },
     },
   });
@@ -112,7 +183,8 @@ export async function POST(request: NextRequest) {
 
   const estimatedTokens = estimateTokens(
     message,
-    conversation.messages.map((m) => m.content)
+    conversation.messages.map((m) => m.content),
+    newAttachments
   );
 
   const limitResult = await checkAndConsumeLimits(user.id, estimatedTokens);
@@ -124,23 +196,45 @@ export async function POST(request: NextRequest) {
   }
 
   const isFirstMessage = conversation.messages.length === 0;
+  const titleSource = message || newAttachments[0]?.fileName || "新しい会話";
 
-  // Persist the user's message immediately (FR-12: every input must be
-  // durably logged, independent of whether Gemini ever responds), and bump
-  // Conversation so it sorts to the top of the sidebar.
-  await prisma.$transaction([
-    prisma.message.create({
+  // Persist the user's message (+ attachments) immediately (FR-12: every
+  // input must be durably logged, independent of whether Gemini ever
+  // responds), and bump Conversation so it sorts to the top of the sidebar.
+  await prisma.$transaction(async (tx) => {
+    const userMessage = await tx.message.create({
       data: { conversationId: conversation.id, role: "USER", content: message },
-    }),
-    prisma.conversation.update({
+    });
+    if (newAttachments.length > 0) {
+      await tx.attachment.createMany({
+        data: newAttachments.map((a) => ({
+          messageId: userMessage.id,
+          fileName: a.fileName,
+          mimeType: a.mimeType,
+          // Buffer defaults to the wider Buffer<ArrayBufferLike>, but
+          // Buffer.from() is always ArrayBuffer-backed in practice —
+          // Prisma's generated type is just narrower than Node's own types.
+          data: a.data as Buffer<ArrayBuffer>,
+        })),
+      });
+    }
+    await tx.conversation.update({
       where: { id: conversation.id },
-      data: { title: isFirstMessage ? message.slice(0, 50) : conversation.title },
-    }),
-  ]);
+      data: { title: isFirstMessage ? titleSource.slice(0, 50) : conversation.title },
+    });
+  });
 
   const history: ChatHistoryItem[] = [
-    ...conversation.messages.map((m) => ({ role: m.role, content: m.content })),
-    { role: "USER", content: message },
+    ...conversation.messages.map((m) => ({
+      role: m.role,
+      content: m.content,
+      attachments: m.attachments.map((a) => ({
+        fileName: a.fileName,
+        mimeType: a.mimeType,
+        data: Buffer.from(a.data),
+      })),
+    })),
+    { role: "USER", content: message, attachments: newAttachments },
   ];
 
   let streamResult: ReturnType<typeof streamChatReply>;

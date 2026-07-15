@@ -1,6 +1,7 @@
 import "server-only";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, type Content } from "@google/genai";
 import type { MessageRole } from "@/generated/prisma/client";
+import { attachmentToPart, type StoredAttachment } from "./attachments";
 
 /** Model id used for all Gemini calls. Overridable via env for testing / cost control. */
 export const GEMINI_MODEL = process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash";
@@ -20,6 +21,7 @@ export class GeminiNotConfiguredError extends Error {
 export type ChatHistoryItem = {
   role: MessageRole; // USER | ASSISTANT
   content: string;
+  attachments?: StoredAttachment[];
 };
 
 export type GeminiUsage = {
@@ -42,11 +44,19 @@ function getClient(): GoogleGenAI {
   return new GoogleGenAI({ apiKey });
 }
 
-function toContents(history: ChatHistoryItem[]) {
-  return history.map((m) => ({
-    role: m.role === "USER" ? ("user" as const) : ("model" as const),
-    parts: [{ text: m.content }],
-  }));
+async function toContents(history: ChatHistoryItem[]): Promise<Content[]> {
+  return Promise.all(
+    history.map(async (m) => {
+      const attachmentParts = await Promise.all(
+        (m.attachments ?? []).map((a) => attachmentToPart(a))
+      );
+      const textPart = m.content.trim() !== "" ? [{ text: m.content }] : [];
+      return {
+        role: m.role === "USER" ? ("user" as const) : ("model" as const),
+        parts: [...attachmentParts, ...textPart],
+      };
+    })
+  );
 }
 
 /**
@@ -60,7 +70,7 @@ export async function generateChatReply(
 
   const response = await ai.models.generateContent({
     model: GEMINI_MODEL,
-    contents: toContents(history),
+    contents: await toContents(history),
   });
 
   const usage = response.usageMetadata;
@@ -108,7 +118,7 @@ export function streamChatReply(history: ChatHistoryItem[]): StreamChatReplyResu
     try {
       const stream = await ai.models.generateContentStream({
         model: GEMINI_MODEL,
-        contents: toContents(history),
+        contents: await toContents(history),
       });
 
       for await (const chunk of stream) {

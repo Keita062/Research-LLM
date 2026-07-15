@@ -89,8 +89,23 @@ model Message {
   content        String       @db.Text
   createdAt      DateTime     @default(now())
   usageLog       UsageLog?
+  attachments    Attachment[]
 
   @@index([conversationId, createdAt])
+}
+
+// メッセージに添付されたファイル（画像・CSV・Excel）。data は常に元ファイルのバイト列を保持し、
+// Gemini へ渡す形式（画像はinlineData、CSV/Excelはテキスト抽出）への変換は送信時に都度行う。
+model Attachment {
+  id        String   @id @default(cuid())
+  messageId String
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  fileName  String
+  mimeType  String
+  data      Bytes
+  createdAt DateTime @default(now())
+
+  @@index([messageId])
 }
 
 model UsageLog {

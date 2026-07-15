@@ -11,8 +11,11 @@ import { createConversationAction } from "@/actions/chat";
 export default async function ChatLayout({ children }: { children: ReactNode }) {
   const user = await requireUser();
 
+  // Only list conversations that have at least one message — an empty
+  // conversation is created every time "+ 新しい会話" is clicked, and
+  // without this filter those placeholders pile up and bury real history.
   const conversations = await prisma.conversation.findMany({
-    where: { userId: user.id },
+    where: { userId: user.id, messages: { some: {} } },
     orderBy: { updatedAt: "desc" },
     select: { id: true, title: true },
     take: 50,
