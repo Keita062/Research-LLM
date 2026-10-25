@@ -1,8 +1,8 @@
-# Playbook 03：Issue 単位の実装
+# 手順書 03：Issue 単位の実装
 
-- マクロ：`!rllm-impl`
+- 呼び出し方：Devin で `@skills:rllm-implement <Issue番号>`
 - 使う場面：`01_docs/implementation-plan.md` で計画された GitHub Issue を1件実装するとき
-- 使い方：セッション開始時に対象Issueの番号かURLを伝える（例：`!rllm-impl #12 を実装してください`）
+- 使い方：セッション開始時に対象Issueの番号かURLを伝える（例：`@skills:rllm-implement #12`）
 - 前提資料（必ず最初に読む）：`AGENTS.md`、対象Issue、`01_docs/requirements.md`、`01_docs/architecture.md`、`01_docs/data-model.md`、関係するADR
 
 ## Overview

@@ -1,6 +1,6 @@
-# Playbook 02：v2 アーキテクチャ設計と実装計画
+# 手順書 02：v2 アーキテクチャ設計と実装計画
 
-- マクロ：`!rllm-design`
+- 呼び出し方：Devin で `@skills:rllm-design`
 - 使う場面：承認済みの要件定義書をもとに、設計書と実装計画（GitHub Issue）を作るとき
 - 前提資料（必ず最初に読む）：`AGENTS.md`、`01_docs/requirements.md`、`01_docs/rq-traceability.md`、`01_docs/agent-survey.md`、`00_context/research-context.md`
 
@@ -15,7 +15,7 @@
 5. ユーザー承認後に作成する GitHub Issue 群
 6. 上記ドキュメントを含むPull Request
 
-**このPlaybookでは、検証用の小さな試作（spike）を除きアプリケーションコードを変更しない。**
+**この手順書では、検証用の小さな試作（spike）を除きアプリケーションコードを変更しない。**
 
 ## What's Needed From User
 
@@ -26,7 +26,7 @@
 
 ## Procedure
 
-1. `01_docs/requirements.md` が `main` にマージ済みか確認する。未マージなら作業を止め、ユーザーに `!rllm-req` の完了を依頼する。
+1. `01_docs/requirements.md` が `main` にマージ済みか確認する。未マージなら作業を止め、ユーザーに要件定義（`@skills:rllm-requirements`）の完了を依頼する。
 2. 前提資料を読み、要件ID（FR/DR/PR/NFR）の一覧を手元に作る。
 3. コンポーネントを設計し `01_docs/architecture.md` に書く。少なくとも次を含める：
    - Collector：対象Coding AgentごとのHookアダプタ、項目の最小化・仮名化、失敗してもエージェントを止めない設計
@@ -45,7 +45,7 @@
    - **最初のIssueはプロジェクトの雛形作成と CI（GitHub Actions：型チェック・Lint・テスト・ビルド）・テスト基盤の整備** にする。このIssueで `AGENTS.md` の開発コマンドと `.devin/blueprint.yaml` の knowledge を更新することを完了条件に含める
    - 各Issueに：目的、対応する要件ID、完了条件、依存するIssue、想定規模（S/M/L）を書く。1 Issue は 1 PR で終わる大きさにする
 8. ブランチ `devin/design-v2-<YYYYMMDD>` で成果物をコミットし、ドラフトPRを作成する。ユーザーのレビューに対応する。
-9. ユーザーが設計を承認したら、Issue作成の許可を得てから `implementation-plan.md` の内容で GitHub Issue を作成する（ラベル例：`v2`、`M1`〜`M7`）。作成したIssue番号を `implementation-plan.md` に追記し、次は `!rllm-impl` でIssueを1件ずつ実装できることを伝える。
+9. ユーザーが設計を承認したら、Issue作成の許可を得てから `implementation-plan.md` の内容で GitHub Issue を作成する（ラベル例：`v2`、`M1`〜`M7`）。作成したIssue番号を `implementation-plan.md` に追記し、次は `@skills:rllm-implement` でIssueを1件ずつ実装できることを伝える。
 
 ## Specifications
 

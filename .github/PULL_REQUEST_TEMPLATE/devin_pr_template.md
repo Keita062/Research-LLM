@@ -10,7 +10,7 @@ Closes #
 
 ## 完了条件の確認
 
-<!-- Issue（または Playbook の Specifications）の完了条件を1つずつ、満たしたかどうかと確認方法を書く -->
+<!-- Issue（または 手順書の Specifications）の完了条件を1つずつ、満たしたかどうかと確認方法を書く -->
 
 - [ ]
 

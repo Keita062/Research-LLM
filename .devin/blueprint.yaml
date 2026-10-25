@@ -1,7 +1,7 @@
 # Devin の作業環境定義（リポジトリ単位の blueprint）
 # 参考: https://docs.devin.ai/onboard-devin/environment/blueprint-reference
 # 変更を main にマージしたら、Devin の Settings > Environment で Sync → Build を実行する。
-# 技術スタックは設計段階（devin/playbooks/02）で決める。決まったらこのファイルを更新すること。
+# 技術スタックは設計段階（00_context/procedure-02-design.md）で決める。決まったらこのファイルを更新すること。
 
 initialize:
   - name: "Install Node.js"
@@ -49,6 +49,6 @@ knowledge:
 
   - name: project
     contents: |
-      作業ルールは AGENTS.md、Devin 用 Playbook は devin/ を参照。
+      作業ルールは AGENTS.md、開発の手順書は 00_context/procedure-0X-*.md（.devin/skills/ から呼び出す）を参照。
       研究目的・RQ の正本は 00_context/research-questions.md。
       旧チャットボット（v1）はタグ v1-chatbot に残っている（git show v1-chatbot:<パス> で参照可）。
