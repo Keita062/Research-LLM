@@ -1,6 +1,7 @@
 # Devin の作業環境定義（リポジトリ単位の blueprint）
 # 参考: https://docs.devin.ai/onboard-devin/environment/blueprint-reference
 # 変更を main にマージしたら、Devin の Settings > Environment で Sync → Build を実行する。
+# 技術スタックは設計段階（devin/playbooks/02）で決める。決まったらこのファイルを更新すること。
 
 initialize:
   - name: "Install Node.js"
@@ -23,38 +24,31 @@ initialize:
         || sudo -u postgres createdb research_llm
 
 maintenance:
-  - name: "Install npm dependencies"
-    run: npm install
-
-  - name: "Create .env from example if missing"
-    run: test -f .env || cp .env.example .env
+  - name: "Install npm dependencies (package.json がある場合のみ)"
+    run: if [ -f package.json ]; then npm install; fi
 
 knowledge:
   - name: database
     contents: |
-      ローカル開発用の PostgreSQL（.env.example の DATABASE_URL と同じ postgres:postgres@localhost:5432/research_llm）。
+      ローカル開発用の PostgreSQL（postgres:postgres@localhost:5432/research_llm）。
       セッション開始時に起動されていない場合は次を実行する:
         sudo service postgresql start
-      スキーマ反映と初期データ:
-        npx prisma migrate dev
-        npm run db:seed
-      Docker（docker-compose.yml）は研究者のローカル環境用。Devin 上では apt で入れた PostgreSQL を使う。
+      DBを使うかどうか・スキーマ管理の方法は設計段階で決める。
 
   - name: lint
     contents: |
-      npm run lint
-      npx tsc --noEmit
+      未整備（2026-10-25 時点でアプリケーションコードなし）。設計・実装計画の最初の Issue で整備し、ここを書き換える。
 
   - name: test
     contents: |
-      2026-10-25 時点ではテスト基盤が未整備（v2 実装計画の最初の Issue で整備する）。
-      整備後はここに実行コマンドを書き換えること。
+      未整備（2026-10-25 時点でアプリケーションコードなし）。設計・実装計画の最初の Issue で整備し、ここを書き換える。
 
   - name: build
     contents: |
-      npm run build
+      未整備（2026-10-25 時点でアプリケーションコードなし）。設計・実装計画の最初の Issue で整備し、ここを書き換える。
 
   - name: project
     contents: |
       作業ルールは AGENTS.md、Devin 用 Playbook は devin/ を参照。
       研究目的・RQ の正本は docs/research/research-questions.md。
+      旧チャットボット（v1）はタグ v1-chatbot に残っている（git show v1-chatbot:<パス> で参照可）。
