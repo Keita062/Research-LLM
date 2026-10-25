@@ -7,7 +7,8 @@ import type { Store } from "./store/types.js";
 
 export function createApp(deps: { store: Store; llm: LlmClient; config: AppConfig; now?: () => Date }) {
   const app = new Hono();
-  app.get("/healthz", (c) => c.text("ok"));
+  // Cloud Run では末尾が z のパス（/healthz 等）が予約されているため /health を使う
+  app.get("/health", (c) => c.text("ok"));
   app.get("/", (c) => c.redirect("/admin"));
   app.route("/api/v1", createApi(deps));
   app.route("/admin", createAdmin(deps));
