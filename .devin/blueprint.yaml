@@ -1,0 +1,60 @@
+# Devin の作業環境定義（リポジトリ単位の blueprint）
+# 参考: https://docs.devin.ai/onboard-devin/environment/blueprint-reference
+# 変更を main にマージしたら、Devin の Settings > Environment で Sync → Build を実行する。
+
+initialize:
+  - name: "Install Node.js"
+    uses: github.com/actions/setup-node@v4
+    with:
+      node-version: "24"
+
+  - name: "Install Python (分析スクリプト用)"
+    uses: github.com/actions/setup-python@v5
+    with:
+      python-version: "3.12"
+
+  - name: "Install PostgreSQL"
+    run: |
+      sudo apt-get update
+      sudo apt-get install -y postgresql postgresql-contrib
+      sudo service postgresql start
+      sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';"
+      sudo -u postgres psql -tc "SELECT 1 FROM pg_database WHERE datname = 'research_llm'" | grep -q 1 \
+        || sudo -u postgres createdb research_llm
+
+maintenance:
+  - name: "Install npm dependencies"
+    run: npm install
+
+  - name: "Create .env from example if missing"
+    run: test -f .env || cp .env.example .env
+
+knowledge:
+  - name: database
+    contents: |
+      ローカル開発用の PostgreSQL（.env.example の DATABASE_URL と同じ postgres:postgres@localhost:5432/research_llm）。
+      セッション開始時に起動されていない場合は次を実行する:
+        sudo service postgresql start
+      スキーマ反映と初期データ:
+        npx prisma migrate dev
+        npm run db:seed
+      Docker（docker-compose.yml）は研究者のローカル環境用。Devin 上では apt で入れた PostgreSQL を使う。
+
+  - name: lint
+    contents: |
+      npm run lint
+      npx tsc --noEmit
+
+  - name: test
+    contents: |
+      2026-10-25 時点ではテスト基盤が未整備（v2 実装計画の最初の Issue で整備する）。
+      整備後はここに実行コマンドを書き換えること。
+
+  - name: build
+    contents: |
+      npm run build
+
+  - name: project
+    contents: |
+      作業ルールは AGENTS.md、Devin 用 Playbook は devin/ を参照。
+      研究目的・RQ の正本は docs/research/research-questions.md。
