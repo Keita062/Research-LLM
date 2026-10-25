@@ -7,18 +7,15 @@
 
 - 研究目的・RQ：[00_context/research-questions.md](00_context/research-questions.md)
 - 開発の前提と制約：[00_context/research-context.md](00_context/research-context.md)
-- 作業ルール：[AGENTS.md](AGENTS.md)
-- Devin での進め方（要件定義 → 設計 → 実装）：[devin/README.md](devin/README.md)
+- 作業ルール・開発の進め方：[AGENTS.md](AGENTS.md)
 
 ## フォルダ構成
 
 ```
 00_context/   研究の前提資料（研究目的・RQ・研究コンテキスト）
-01_docs/      要件定義書・設計書・メモ
+01_docs/      要件定義書・設計書・手順・メモ（Devinとの対話で作成）
 02_scripts/   プログラム一式
-devin/        Devin 用 Playbook
-.devin/       Devin の設定（環境定義・Skills）
+.devin/       Devin の環境定義
 .github/      PR テンプレート
 ```
 
-以前の研究室用LLMチャットボット（v1）は削除済みです。タグ `v1-chatbot` から参照できます。
