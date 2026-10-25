@@ -1,53 +1,45 @@
 # Devin の作業環境定義（リポジトリ単位の blueprint）
 # 参考: https://docs.devin.ai/onboard-devin/environment/blueprint-reference
 # 変更を main にマージしたら、Devin の Settings > Environment で Sync → Build を実行する。
-# 技術スタックは設計段階で決める。決まったらこのファイルを更新すること。
 
 initialize:
   - name: "Install Node.js"
     uses: github.com/actions/setup-node@v4
     with:
-      node-version: "24"
+      node-version: "20"
 
   - name: "Install Python (分析スクリプト用)"
     uses: github.com/actions/setup-python@v5
     with:
       python-version: "3.12"
 
-  - name: "Install PostgreSQL"
-    run: |
-      sudo apt-get update
-      sudo apt-get install -y postgresql postgresql-contrib
-      sudo service postgresql start
-      sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';"
-      sudo -u postgres psql -tc "SELECT 1 FROM pg_database WHERE datname = 'research_llm'" | grep -q 1 \
-        || sudo -u postgres createdb research_llm
-
 maintenance:
-  - name: "Install npm dependencies (package.json がある場合のみ)"
-    run: if [ -f package.json ]; then npm install; fi
+  - name: "Install server dependencies"
+    run: cd 02_scripts/server && npm ci
+  - name: "Install extension dependencies"
+    run: cd 02_scripts/extension && npm ci
 
 knowledge:
-  - name: database
-    contents: |
-      ローカル開発用の PostgreSQL（postgres:postgres@localhost:5432/research_llm）。
-      セッション開始時に起動されていない場合は次を実行する:
-        sudo service postgresql start
-      DBを使うかどうか・スキーマ管理の方法は設計段階で決める。
-
   - name: lint
     contents: |
-      未整備（2026-10-25 時点でアプリケーションコードなし）。設計・実装計画の最初の Issue で整備し、ここを書き換える。
+      02_scripts/server と 02_scripts/extension でそれぞれ `npm run lint`（ESLint＋tsc --noEmit）。
 
   - name: test
     contents: |
-      未整備（2026-10-25 時点でアプリケーションコードなし）。設計・実装計画の最初の Issue で整備し、ここを書き換える。
+      02_scripts/server と 02_scripts/extension でそれぞれ `npm test`（Vitest）。
+      サーバーのテストはメモリDB・モックLLMで動くので外部サービス不要。
 
   - name: build
     contents: |
-      未整備（2026-10-25 時点でアプリケーションコードなし）。設計・実装計画の最初の Issue で整備し、ここを書き換える。
+      server: `npm run build`（dist/）。ローカル起動は `cp .env.example .env && npm run dev`（http://localhost:8080/admin、ADMIN_DEV_LOGIN=1 で簡易ログイン）。
+      extension: `npm run build`、`.vsix` は `npm run package`（dist/research-llm-agent.vsix）。
+
+  - name: database
+    contents: |
+      本番は Firestore（GCP プロジェクト research-llm-512715）。ローカル・テストは STORE=memory のメモリ実装で、DB のセットアップは不要。
 
   - name: project
     contents: |
       作業ルール・フォルダ構成は AGENTS.md を参照。
       研究目的・RQ の正本は 00_context/research-questions.md。
+      デプロイ・運用は 01_docs/operations-guide.md。

@@ -4,7 +4,7 @@
 
 - このリポジトリは卒業研究「AIコーディングエージェントと人間の相互作用が、1つの依頼の中でどう展開し、利用期間を通じてどう変化するか」のための開発リポジトリ。
 - 研究室メンバーが普段の開発（VS Code／Unity）で使う Coding Agent の利用イベントを、本人の同意のもとで自動収集する基盤を作る。
-- 現在の段階：**要件定義**（[01_docs/requirements.md](01_docs/requirements.md)）。アプリケーションコードはまだない。進め方は下の「開発の進め方」を参照。
+- 現在の段階：**実装**（要件は [01_docs/requirements.md](01_docs/requirements.md)、運用は [01_docs/operations-guide.md](01_docs/operations-guide.md)）。進め方は下の「開発の進め方」を参照。
 
 ## 必読資料
 
@@ -26,7 +26,7 @@
 |---|---|
 | `00_context/` | 研究者が用意した前提資料のみ（研究目的・RQ・研究コンテキスト）。エージェントは編集しない |
 | `01_docs/` | エージェントや研究者が作成するドキュメント・メモ（要件定義書、設計書、手順、調査結果など） |
-| `02_scripts/` | プログラム一式（Collector・サーバー・分析スクリプト・spike など）。中のサブフォルダ構成は設計段階で決める |
+| `02_scripts/` | プログラム一式。`server/`（Cloud Run のサーバー・管理画面）、`extension/`（VS Code 拡張）、`deploy/`（デプロイ・配布スクリプト） |
 | `.devin/` | Devin の設定（`blueprint.yaml`）。場所は Devin の仕様で固定 |
 | `.github/` | PR テンプレート・CI 設定。場所は GitHub の仕様で固定 |
 
@@ -42,7 +42,17 @@
 
 ## 開発コマンド
 
-- まだない。技術スタックとプロジェクト構成は設計段階で決め、決まったらこの節と `.devin/blueprint.yaml` の knowledge（`lint`・`test`・`build`・`database`）を更新する。
+`02_scripts/server/` と `02_scripts/extension/` のそれぞれで実行する（Node.js 20 以上）。
+
+| 目的 | コマンド |
+|---|---|
+| 依存関係 | `npm ci` |
+| Lint＋型チェック | `npm run lint` |
+| テスト | `npm test` |
+| ビルド | `npm run build`（拡張の `.vsix` は `npm run package`） |
+| サーバーをローカル起動 | `cp .env.example .env && npm run dev`（`server/`。メモリDB・モック応答） |
+
+デプロイは `02_scripts/deploy/deploy.sh`、配布 ZIP は `02_scripts/deploy/build-distribution.sh`（手順は運用手順書）。
 
 ## 規約
 
