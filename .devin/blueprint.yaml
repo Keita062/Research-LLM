@@ -50,5 +50,5 @@ knowledge:
   - name: project
     contents: |
       作業ルールは AGENTS.md、Devin 用 Playbook は devin/ を参照。
-      研究目的・RQ の正本は docs/research/research-questions.md。
+      研究目的・RQ の正本は 00_context/research-questions.md。
       旧チャットボット（v1）はタグ v1-chatbot に残っている（git show v1-chatbot:<パス> で参照可）。

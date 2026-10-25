@@ -11,10 +11,23 @@
 
 | 資料 | 内容 |
 |---|---|
-| [docs/research/research-questions.md](docs/research/research-questions.md) | 研究目的・達成条件・RQ1〜RQ7（**正本**） |
-| [docs/research/research-context.md](docs/research/research-context.md) | 方針転換の経緯、想定構成、データ収集方針、製品選定の制約 |
-| [docs/research/rq-analysis-draft-v1.md](docs/research/rq-analysis-draft-v1.md) | 旧RQ体系での分析方法案（参考） |
-| `docs/v2/` | 要件定義・設計（Playbook 01・02 で作成） |
+| [00_context/research-questions.md](00_context/research-questions.md) | 研究目的・達成条件・RQ1〜RQ7（**正本**） |
+| [00_context/research-context.md](00_context/research-context.md) | 方針転換の経緯、想定構成、データ収集方針、製品選定の制約 |
+| [00_context/rq-analysis-draft-v1.md](00_context/rq-analysis-draft-v1.md) | 旧RQ体系での分析方法案（参考） |
+| `01_docs/` | 要件定義・設計（Playbook 01・02 で作成） |
+
+## フォルダ構成（この置き場所を守る）
+
+| フォルダ | 置くもの |
+|---|---|
+| `00_context/` | 研究者が用意した前提資料のみ（研究目的・RQ・研究コンテキスト）。エージェントは編集しない |
+| `01_docs/` | エージェントや研究者が作成するドキュメント・メモ（要件定義書、設計書、ADR は `01_docs/adr/`、調査結果、実装計画など） |
+| `02_scripts/` | プログラム一式（Collector・サーバー・分析スクリプト・spike など）。中のサブフォルダ構成は設計段階で決める |
+| `devin/` | Devin 用 Playbook |
+| `.devin/` | Devin の設定（`blueprint.yaml`、`skills/`）。場所は Devin の仕様で固定 |
+| `.github/` | PR テンプレート・CI 設定。場所は GitHub の仕様で固定 |
+
+- ルート直下に新しいフォルダやファイルを増やさない。ツールの仕様上ルートに置く必要があるもの（`package.json` など）が出た場合は、`02_scripts/` の中に閉じ込められないか先に検討し、無理な場合は PR で理由を説明する。
 
 ## 絶対に守ること
 

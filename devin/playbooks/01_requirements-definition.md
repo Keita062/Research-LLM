@@ -2,7 +2,7 @@
 
 - マクロ：`!rllm-req`
 - 使う場面：Research-LLM v2 の要件定義書を作る／改訂するとき
-- 前提資料（必ず最初に読む）：`AGENTS.md`、`docs/research/research-questions.md`（RQ正本）、`docs/research/research-context.md`、`docs/research/rq-analysis-draft-v1.md`
+- 前提資料（必ず最初に読む）：`AGENTS.md`、`00_context/research-questions.md`（RQ正本）、`00_context/research-context.md`、`00_context/rq-analysis-draft-v1.md`
 
 ## Overview
 
@@ -11,9 +11,9 @@
 このPlaybookのゴールは、卒業研究のRQ1〜RQ7に答えるために必要十分な v2 の要件定義書を作り、ユーザー（研究者本人）の承認を得ることである。
 
 成果物：
-1. `docs/v2/requirements.md`（要件定義書）
-2. `docs/v2/rq-traceability.md`（RQ → 必要な観測データ → 取得手段 → 要件ID の対応表）
-3. `docs/v2/agent-survey.md`（候補Coding Agentのログ取得能力の調査結果。出典URLと確認日つき）
+1. `01_docs/requirements.md`（要件定義書）
+2. `01_docs/rq-traceability.md`（RQ → 必要な観測データ → 取得手段 → 要件ID の対応表）
+3. `01_docs/agent-survey.md`（候補Coding Agentのログ取得能力の調査結果。出典URLと確認日つき）
 4. 上記を含むPull Request（ドラフトで作成し、ユーザーのレビューを受ける）
 
 **このPlaybookではアプリケーションコードを変更しない。** ドキュメントのみを扱う。
@@ -30,12 +30,12 @@
 
 1. 前提資料を読み、研究目的・達成条件・RQ1〜RQ7・データ収集方針・製品選定の制約を把握する。読み終えたら、理解した内容を5〜10行の箇条書きでチャットに報告する。
 2. 参考として、v1 の要件定義書と構成をタグから確認する（`git show v1-chatbot:docs/requirements.md`、`git show v1-chatbot:prisma/schema.prisma`）。v2 の要件（参加者管理・管理画面・ログ記録など）で参考になる考え方があればメモする。**v1 のコードを復元・流用する前提にはしない。**
-3. RQトレーサビリティ表（`docs/v2/rq-traceability.md`）を作る。RQ1〜RQ7 それぞれについて以下を列にする：
+3. RQトレーサビリティ表（`01_docs/rq-traceability.md`）を作る。RQ1〜RQ7 それぞれについて以下を列にする：
    - 答えるために必要な観測データ（例：イベント種別、時刻、ツール名、成否、承認/拒否、ターン位置）
    - そのデータが **本文（プロンプト・回答・コード）を中央に送らずに** 得られるか（可／条件付き／不可）
    - 条件付き・不可の場合の代替案（例：ローカルで分類しラベルのみ送信、集計値のみ送信、追加同意）
    - 対応する要件ID（Procedure 6 で採番後に埋める）
-4. 候補Coding Agentのログ取得能力を調査し `docs/v2/agent-survey.md` にまとめる。
+4. 候補Coding Agentのログ取得能力を調査し `01_docs/agent-survey.md` にまとめる。
    - 候補の例：Claude Code、OpenAI Codex（CLI／IDE拡張）、GitHub Copilot（VS Code のエージェントモード）、Gemini CLI の後継（Antigravity CLI 等）、Cline など。候補の追加・除外は理由を書けばよい
    - 比較観点：利用資格・料金・無償枠の有無、Hook/イベント通知の仕組み（どのイベントが取れるか：依頼送信、ツール実行前後、承認/拒否、応答完了、セッション開始/終了）、Hookに渡るペイロードの項目、Windows対応、VS Code／Unity との相性、規約上のデータ取扱い
    - **根拠は公式ドキュメントに限る**。各項目に出典URLと確認日を書く。確認できなかった項目は「未確認」と書き、推測で埋めない
@@ -45,14 +45,14 @@
    - 人間の行動（承認・修正指示・追加質問・放棄など）の分類を、本文を送らずにどう行うか（research-context.md §4「既知の論点」）
    - 参加者の人数・OS・期間、研究用サーバーの置き場所と費用上限
    回答が足りない論点は「未決事項」として扱い、勝手に決めない。
-6. 要件定義書 `docs/v2/requirements.md` を作成する。章立ては Specifications に従う。要件には ID を振る（機能要件 `FR-xx`、非機能要件 `NFR-xx`、データ要件 `DR-xx`、プライバシー・倫理要件 `PR-xx`）。採番後、トレーサビリティ表の要件ID列を埋める。
+6. 要件定義書 `01_docs/requirements.md` を作成する。章立ては Specifications に従う。要件には ID を振る（機能要件 `FR-xx`、非機能要件 `NFR-xx`、データ要件 `DR-xx`、プライバシー・倫理要件 `PR-xx`）。採番後、トレーサビリティ表の要件ID列を埋める。
 7. 自己レビューする。Specifications のチェックリストを1つずつ確認し、満たしていない項目を直す。
 8. ブランチ `devin/req-v2-<YYYYMMDD>` を作り、成果物をコミットして **ドラフトPR** を作成する。PR本文には、ヒアリングで決まったこと・未決事項・ユーザーに判断してほしい点を箇条書きで書く。
 9. ユーザーのレビューコメントに対応する。承認されたら PR を Ready for review に変更し、要件定義が完了したことと、次は `!rllm-design` で設計に進めることをチャットで伝える。マージはユーザーが行う。
 
 ## Specifications
 
-`docs/v2/requirements.md` は次の章立てを持つこと：
+`01_docs/requirements.md` は次の章立てを持つこと：
 
 1. 目的・背景（研究目的と、v1からの方針転換の理由）
 2. 用語定義（ターン、エピソード、エピソード境界、研究用ID、仮名化 など）
