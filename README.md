@@ -1,5 +1,9 @@
 # Research-LLM
 
+> **v2 へ移行中（2026-10〜）**：研究室用チャットボット（v1、タグ `v1-chatbot`）から、
+> AIコーディングエージェントの利用イベントを本人の同意のもとで収集する基盤（v2）へ切り替えています。
+> 進め方は [AGENTS.md](AGENTS.md) と [devin/README.md](devin/README.md) を参照してください。以下は v1 の説明です。
+
 研究室用LLMチャットボット。研究室メンバーがLLM（Google Gemini API）とどのように対話しているかをログとして蓄積し、管理画面から利用状況を分析できるようにするための社内向けWebアプリです。
 
 詳しい要件は [docs/requirements.md](docs/requirements.md) を参照してください。
