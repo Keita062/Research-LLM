@@ -88,6 +88,7 @@ export interface Store {
 
   /** 既存の eventId は無視する。新規に保存した件数を返す */
   insertEvents(events: StoredEvent[]): Promise<number>;
+  /** 条件に合う直近 limit 件を時系列（古い順）で返す */
   queryEvents(q: EventQuery): Promise<StoredEvent[]>;
   countEvents(participantId: string, sinceIso: string): Promise<number>;
 

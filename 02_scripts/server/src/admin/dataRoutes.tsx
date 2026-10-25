@@ -34,6 +34,7 @@ export function registerDataRoutes(admin: Hono<AdminEnv>, store: Store, config: 
   admin.get("/events", async (c) => {
     const q = (k: string) => c.req.query(k);
     const [events, participants] = await Promise.all([store.queryEvents(eventQuery(q, VIEW_MAX_ROWS)), store.listParticipants()]);
+    events.reverse();
     const filters = ["participant", "type", "from", "to"].filter((k) => q(k));
     return c.html(
       <Layout title="ログ" email={c.get("adminEmail")}>
@@ -93,7 +94,7 @@ export function registerDataRoutes(admin: Hono<AdminEnv>, store: Store, config: 
     const stamp = now().toISOString().slice(0, 19).replace(/[-:T]/g, "");
     c.header("content-type", "text/csv; charset=utf-8");
     c.header("content-disposition", `attachment; filename="events_${stamp}.csv"`);
-    return c.body(toCsv(events.reverse(), cols));
+    return c.body(toCsv(events, cols));
   });
 
   admin.get("/settings", async (c) => {

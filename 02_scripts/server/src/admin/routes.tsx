@@ -8,6 +8,8 @@ import { endSession, GoogleAuth, requireAdmin, startSession, type AdminEnv } fro
 import { registerDataRoutes } from "./dataRoutes.js";
 import { fmt, Layout, STATUS_LABEL } from "./layout.js";
 
+const STALE_DAYS = 3;
+
 function ConsentCell({ p }: { p: Participant }) {
   if (!p.consent) return <span>未回答</span>;
   const { use, metadata, content } = p.consent;
@@ -68,10 +70,17 @@ export function createAdmin({ store, config, now = () => new Date() }: { store: 
 
   const participantsPage = async (email: string, created?: { id: string; code: string }[], notice?: string) => {
     const [settings, list] = await Promise.all([store.getSettings(), store.listParticipants()]);
-    const day = dayKey(now(), config.usageTimeZone);
+    const days = Array.from({ length: 7 }, (_, i) => dayKey(new Date(now().getTime() - i * 86_400_000), config.usageTimeZone));
+    const day = days[0];
     const since = new Date(now().getTime() - 86_400_000).toISOString();
+    const staleBefore = now().getTime() - STALE_DAYS * 86_400_000;
     const rows = await Promise.all(
-      list.map(async (p) => ({ p, usage: await store.getUsage(`user_${p.id}_${day}`), events24h: await store.countEvents(p.id, since) })),
+      list.map(async (p) => {
+        const usages = await Promise.all(days.map((d) => store.getUsage(`user_${p.id}_${d}`)));
+        const week = usages.reduce((a, u) => ({ requests: a.requests + u.requests, tokens: a.tokens + u.tokens }), { requests: 0, tokens: 0 });
+        const stale = p.status === "active" && (!p.lastEventAt || Date.parse(p.lastEventAt) < staleBefore);
+        return { p, usage: usages[0], week, stale, events24h: await store.countEvents(p.id, since) };
+      }),
     );
     const global = await store.getUsage(`global_${day}`);
     return (
@@ -108,9 +117,9 @@ export function createAdmin({ store, config, now = () => new Date() }: { store: 
           </form>
           <table>
             <tr>
-              <th>研究用ID</th><th>状態</th><th>同意(利用/ログ/本文)</th><th>最終接続</th><th>最終ログ受信</th><th>24h件数</th><th>本日の利用</th><th>拡張</th><th>操作</th>
+              <th>研究用ID</th><th>状態</th><th>同意(利用/ログ/本文)</th><th>最終接続</th><th>最終ログ受信</th><th>24h件数</th><th>本日の利用</th><th>直近7日</th><th>拡張</th><th>操作</th>
             </tr>
-            {rows.map(({ p, usage, events24h }) => (
+            {rows.map(({ p, usage, week, stale, events24h }) => (
               <tr>
                 <td><a href={`/admin/events?participant=${p.id}`}>{p.id}</a></td>
                 <td>
@@ -119,12 +128,13 @@ export function createAdmin({ store, config, now = () => new Date() }: { store: 
                 </td>
                 <td><ConsentCell p={p} /></td>
                 <td>{fmt(p.lastSeenAt)}</td>
-                <td>{fmt(p.lastEventAt)}</td>
+                <td class={stale ? "warn" : undefined}>{fmt(p.lastEventAt)}{stale && <div>{STALE_DAYS}日以上受信なし</div>}</td>
                 <td>{events24h}</td>
                 <td>{usage.requests}回 / {usage.tokens.toLocaleString()}tok</td>
+                <td>{week.requests}回 / {week.tokens.toLocaleString()}tok</td>
                 <td>{p.extensionVersion ?? "—"}</td>
                 <td>
-                  {p.status === "stopped" ? (
+                  {p.status === "stopped" || p.status === "withdrawn" ? (
                     <form class="inline" method="post" action={`/admin/participants/${p.id}/resume`}><button>再開</button></form>
                   ) : (
                     <form class="inline" method="post" action={`/admin/participants/${p.id}/stop`}><button class="danger">停止</button></form>
@@ -165,7 +175,8 @@ export function createAdmin({ store, config, now = () => new Date() }: { store: 
         if (p.status !== "withdrawn") await store.updateParticipant(id, { status: "stopped" });
         break;
       case "resume":
-        if (p.status === "stopped") await store.updateParticipant(id, { status: p.activatedAt ? "active" : "invited" });
+        // 撤回者の再開後は、参加者が再度すべてに同意するまで利用できない
+        if (p.status === "stopped" || p.status === "withdrawn") await store.updateParticipant(id, { status: p.activatedAt ? "active" : "invited" });
         break;
       case "reissue": {
         const code = await reissueInvite(store, id);

@@ -20,7 +20,9 @@ function toEvent(d: EventDoc): StoredEvent {
 
 /**
  * 必要な複合インデックス（02_scripts/deploy/deploy.sh で作成）:
- *   events: participantId ASC, occurredAt ASC
+ *   events: participantId ASC, occurredAt DESC
+ *   events: type ASC, occurredAt DESC
+ *   events: participantId ASC, type ASC, occurredAt DESC
  *   events: participantId ASC, receivedAt ASC
  * TTL ポリシー: events.expireAt, usage.expireAt
  */
@@ -110,18 +112,17 @@ export class FirestoreStore implements Store {
     return results.reduce<number>((a, b) => a + b, 0);
   }
 
+  /** 条件に合う直近 limit 件を時系列（古い順）で返す */
   async queryEvents(q: EventQuery) {
     let query: FirebaseFirestore.Query = this.db.collection("events");
     if (q.participantId) query = query.where("participantId", "==", q.participantId);
+    if (q.types && q.types.length) query = query.where("type", "in", q.types.slice(0, 30));
     if (q.from) query = query.where("occurredAt", ">=", q.from);
     if (q.to) query = query.where("occurredAt", "<=", q.to);
-    query = query.orderBy("occurredAt", q.limit ? "desc" : "asc");
-    if (q.limit && !(q.types && q.types.length)) query = query.limit(q.limit);
+    query = query.orderBy("occurredAt", "desc");
+    if (q.limit) query = query.limit(q.limit);
     const snap = await query.get();
-    let list = snap.docs.map((d) => toEvent(d.data() as EventDoc));
-    if (q.types && q.types.length) list = list.filter((e) => q.types!.includes(e.type));
-    if (q.limit) list = list.slice(0, q.limit).reverse();
-    return list;
+    return snap.docs.map((d) => toEvent(d.data() as EventDoc)).reverse();
   }
 
   async countEvents(participantId: string, sinceIso: string) {
