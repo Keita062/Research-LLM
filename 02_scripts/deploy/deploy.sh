@@ -80,6 +80,11 @@ for role in roles/datastore.user roles/secretmanager.secretAccessor; do
   gc projects add-iam-policy-binding "$PROJECT_ID" --member="serviceAccount:$SA_EMAIL" --role="$role" --condition=None >/dev/null
 done
 
+step "Cloud Build の実行権限"
+# 新しいプロジェクトでは Cloud Build が Compute Engine の既定サービスアカウントで動くため、ビルドに必要なロールを付ける
+PROJECT_NUMBER="$(gc projects describe "$PROJECT_ID" --format='value(projectNumber)')"
+gc projects add-iam-policy-binding "$PROJECT_ID" --member="serviceAccount:$PROJECT_NUMBER-compute@developer.gserviceaccount.com"   --role=roles/cloudbuild.builds.builder --condition=None >/dev/null
+
 step "コンテナイメージをビルド（Cloud Build）"
 gc artifacts repositories describe "$REPO" --location="$REGION" >/dev/null 2>&1 \
   || gc artifacts repositories create "$REPO" --repository-format=docker --location="$REGION"
