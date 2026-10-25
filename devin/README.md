@@ -1,14 +1,14 @@
 # devin/ — Devin 用 Playbook
 
 Research-LLM v2（AIコーディングエージェント利用ログ収集基盤）を、Devin で **要件定義 → 設計 → 実装** まで進めるための Playbook 置き場。
-研究目的・RQの正本は [../docs/research/research-questions.md](../docs/research/research-questions.md)、開発の前提は [../docs/research/research-context.md](../docs/research/research-context.md)。
+研究目的・RQの正本は [../00_context/research-questions.md](../00_context/research-questions.md)、開発の前提は [../00_context/research-context.md](../00_context/research-context.md)。
 
 ## Playbook 一覧と使う順番
 
 | 順 | ファイル | マクロ | Skill名 | 成果物 |
 |---|---|---|---|---|
-| 1 | [01_requirements-definition.md](playbooks/01_requirements-definition.md) | `!rllm-req` | `rllm-requirements` | `docs/v2/requirements.md` ほか（ドラフトPR） |
-| 2 | [02_architecture-design.md](playbooks/02_architecture-design.md) | `!rllm-design` | `rllm-design` | `docs/v2/architecture.md`・データモデル・ADR・実装計画・GitHub Issue |
+| 1 | [01_requirements-definition.md](playbooks/01_requirements-definition.md) | `!rllm-req` | `rllm-requirements` | `01_docs/requirements.md` ほか（ドラフトPR） |
+| 2 | [02_architecture-design.md](playbooks/02_architecture-design.md) | `!rllm-design` | `rllm-design` | `01_docs/architecture.md`・データモデル・ADR・実装計画・GitHub Issue |
 | 3 | [03_feature-implementation.md](playbooks/03_feature-implementation.md) | `!rllm-impl` | `rllm-implement` | Issue 1件ごとの実装PR（Issueの数だけ繰り返す） |
 
 各段階の成果物（PR）を研究者がレビュー・マージしてから、次の段階に進む。
@@ -17,7 +17,7 @@ Research-LLM v2（AIコーディングエージェント利用ログ収集基盤
 
 Devin は 2026-10 に Playbooks から **Skills** へ移行中で、2026-10-24 以降に作成したアカウントには Playbooks 画面がない。どちらの場合でも使えるようにしている。
 
-- **Skills（推奨・新しいアカウントはこちら）**：登録作業は不要。`.agents/skills/` 以下の `SKILL.md` を Devin が自動で読み込む（中身は devin/playbooks/ を参照するだけの薄いラッパー）。
+- **Skills（推奨・新しいアカウントはこちら）**：登録作業は不要。`.devin/skills/` 以下の `SKILL.md` を Devin が自動で読み込む（中身は devin/playbooks/ を参照するだけの薄いラッパー）。
   セッションで `@skills:rllm-requirements` のように呼び出す。
 - **Playbooks（従来のアカウント）**：Devin の Settings → Playbooks → Create で、各 md の本文を貼り付け、上表のマクロを設定する。
   セッションの入力欄でマクロ（例：`!rllm-req`）を入力すると添付される。
@@ -41,7 +41,7 @@ Research-LLM v2 の要件定義を始めてください。まず前提資料を�
 |---|---|
 | [../AGENTS.md](../AGENTS.md) | すべてのエージェント（Devin・Claude Code 等）が最初に読む作業ルール |
 | [../.devin/blueprint.yaml](../.devin/blueprint.yaml) | Devin の作業環境（Node.js・Python・PostgreSQL・依存関係）の定義 |
-| [../.agents/skills/](../.agents/skills/) | Skills 版の入口 |
+| [../.devin/skills/](../.devin/skills/) | Skills 版の入口 |
 | [../.github/PULL_REQUEST_TEMPLATE/devin_pr_template.md](../.github/PULL_REQUEST_TEMPLATE/devin_pr_template.md) | Devin が PR を作るときのテンプレート |
 
 ## Playbook を改善するとき

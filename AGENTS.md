@@ -3,19 +3,31 @@
 ## プロジェクトの現在地（最初に読む）
 
 - このリポジトリは卒業研究「AIコーディングエージェントと人間の相互作用が、1つの依頼の中でどう展開し、利用期間を通じてどう変化するか」のための開発リポジトリ。
-- **v1（タグ `v1-chatbot`）**：研究室用LLMチャットボット（Next.js＋Prisma＋PostgreSQL＋Gemini API）。完成済み。
-- **v2（これから）**：研究室メンバーが普段の開発（VS Code／Unity）で使う Coding Agent の利用イベントを、本人の同意のもとで自動収集する基盤に切り替える。v1 の資産は流用を基本とする。
-- 現在の段階：**v2 の要件定義前**。進め方は [devin/README.md](devin/README.md) の Playbook に従う（要件定義 → 設計 → 実装）。
+- 研究室メンバーが普段の開発（VS Code／Unity）で使う Coding Agent の利用イベントを、本人の同意のもとで自動収集する基盤（v2）を **ゼロから** 作る。
+- 以前の研究室用LLMチャットボット（v1）のコードは削除済み。タグ `v1-chatbot` に残っており、参考にしたいときは `git show v1-chatbot:<パス>` で読める（研究者の指示がない限り復元しない）。
+- 現在の段階：**要件定義前**。アプリケーションコードはまだない。進め方は [devin/README.md](devin/README.md) の Playbook に従う（要件定義 → 設計 → 実装）。
 
 ## 必読資料
 
 | 資料 | 内容 |
 |---|---|
-| [docs/research/research-questions.md](docs/research/research-questions.md) | 研究目的・達成条件・RQ1〜RQ7（**正本**） |
-| [docs/research/research-context.md](docs/research/research-context.md) | 方針転換の経緯、想定構成、データ収集方針、製品選定の制約 |
-| [docs/research/rq-analysis-draft-v1.md](docs/research/rq-analysis-draft-v1.md) | 旧RQ体系での分析方法案（参考） |
-| [docs/requirements.md](docs/requirements.md) | v1 の要件定義書（変更しない） |
-| `docs/v2/` | v2 の要件定義・設計（Playbook 01・02 で作成） |
+| [00_context/research-questions.md](00_context/research-questions.md) | 研究目的・達成条件・RQ1〜RQ7（**正本**） |
+| [00_context/research-context.md](00_context/research-context.md) | 方針転換の経緯、想定構成、データ収集方針、製品選定の制約 |
+| [00_context/rq-analysis-draft-v1.md](00_context/rq-analysis-draft-v1.md) | 旧RQ体系での分析方法案（参考） |
+| `01_docs/` | 要件定義・設計（Playbook 01・02 で作成） |
+
+## フォルダ構成（この置き場所を守る）
+
+| フォルダ | 置くもの |
+|---|---|
+| `00_context/` | 研究者が用意した前提資料のみ（研究目的・RQ・研究コンテキスト）。エージェントは編集しない |
+| `01_docs/` | エージェントや研究者が作成するドキュメント・メモ（要件定義書、設計書、ADR は `01_docs/adr/`、調査結果、実装計画など） |
+| `02_scripts/` | プログラム一式（Collector・サーバー・分析スクリプト・spike など）。中のサブフォルダ構成は設計段階で決める |
+| `devin/` | Devin 用 Playbook |
+| `.devin/` | Devin の設定（`blueprint.yaml`、`skills/`）。場所は Devin の仕様で固定 |
+| `.github/` | PR テンプレート・CI 設定。場所は GitHub の仕様で固定 |
+
+- ルート直下に新しいフォルダやファイルを増やさない。ツールの仕様上ルートに置く必要があるもの（`package.json` など）が出た場合は、`02_scripts/` の中に閉じ込められないか先に検討し、無理な場合は PR で理由を説明する。
 
 ## 絶対に守ること
 
@@ -24,33 +36,12 @@
 - 研究用IDと氏名の対応表は研究ログDBと分けて扱う（匿名化ではなく仮名化）。
 - 秘密情報（`.env`、APIキー、パスワード、トークン）をコミットしない。
 - `main` へ直接 push しない。作業はブランチ → PR で行い、マージは研究者が行う。
-- v1 の機能を削除するときは、事前に研究者の承認を得る。
 
 ## 開発コマンド
 
-```bash
-npm install            # postinstall で prisma generate も実行される
-npx prisma migrate dev # マイグレーション作成・適用
-npm run db:seed        # 初期管理者と RateLimitConfig を作成
-npm run dev            # http://localhost:3000
-npx tsc --noEmit       # 型チェック
-npm run lint           # Lint
-npm run build          # 本番ビルド
-```
+- まだない。技術スタックとプロジェクト構成は設計段階（Playbook 02）で決め、決まったらこの節と `.devin/blueprint.yaml` の knowledge（`lint`・`test`・`build`・`database`）を更新する。
 
-- ローカルDB：研究者の PC では `docker compose up -d`。Devin 上では `.devin/blueprint.yaml` の knowledge `database` を参照。
-- テスト基盤は未整備（v2 実装計画の最初の Issue で整備する）。
+## 規約
 
-## コードの構成と規約
-
-- `src/app/`：App Router（`(auth)`・`(app)`・`(admin)` のルートグループ）、`src/app/api/`：Route Handlers
-- `src/actions/`：Server Actions、`src/lib/`：共通処理（DB・セッション・RBAC・レート制限など）、入力検証は zod
-- `prisma/schema.prisma`：DBスキーマ。Prisma クライアントは `src/generated/prisma` に生成され、コミットしない
 - 参加者の PC で動くコード（Collector など）は Windows／macOS でも動くように書く
 - ドキュメント・コミットメッセージ・PR・Issue は日本語で書く
-
-<!-- BEGIN:nextjs-agent-rules -->
-# This is NOT the Next.js you know
-
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
-<!-- END:nextjs-agent-rules -->

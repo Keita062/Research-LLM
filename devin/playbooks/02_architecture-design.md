@@ -2,16 +2,16 @@
 
 - マクロ：`!rllm-design`
 - 使う場面：承認済みの要件定義書をもとに、設計書と実装計画（GitHub Issue）を作るとき
-- 前提資料（必ず最初に読む）：`AGENTS.md`、`docs/v2/requirements.md`、`docs/v2/rq-traceability.md`、`docs/v2/agent-survey.md`、`docs/research/research-context.md`
+- 前提資料（必ず最初に読む）：`AGENTS.md`、`01_docs/requirements.md`、`01_docs/rq-traceability.md`、`01_docs/agent-survey.md`、`00_context/research-context.md`
 
 ## Overview
 
-承認済みの `docs/v2/requirements.md` を満たす v2 のアーキテクチャを設計し、実装をIssue単位に分解する。
+承認済みの `01_docs/requirements.md` を満たす v2 のアーキテクチャを設計し、実装をIssue単位に分解する。
 成果物：
-1. `docs/v2/architecture.md`（構成図・コンポーネントの責務・データの流れ・技術選定）
-2. `docs/v2/data-model.md`（イベントスキーマ、DBテーブル定義、エピソード派生ロジック、エクスポート形式）
-3. `docs/v2/adr/NNNN-<タイトル>.md`（重要な技術判断ごとのADR。背景・選択肢・決定・理由）
-4. `docs/v2/implementation-plan.md`（マイルストーンとIssue一覧。依存関係つき）
+1. `01_docs/architecture.md`（構成図・コンポーネントの責務・データの流れ・技術選定）
+2. `01_docs/data-model.md`（イベントスキーマ、DBテーブル定義、エピソード派生ロジック、エクスポート形式）
+3. `01_docs/adr/NNNN-<タイトル>.md`（重要な技術判断ごとのADR。背景・選択肢・決定・理由）
+4. `01_docs/implementation-plan.md`（マイルストーンとIssue一覧。依存関係つき）
 5. ユーザー承認後に作成する GitHub Issue 群
 6. 上記ドキュメントを含むPull Request
 
@@ -26,23 +26,23 @@
 
 ## Procedure
 
-1. `docs/v2/requirements.md` が `main` にマージ済みか確認する。未マージなら作業を止め、ユーザーに `!rllm-req` の完了を依頼する。
+1. `01_docs/requirements.md` が `main` にマージ済みか確認する。未マージなら作業を止め、ユーザーに `!rllm-req` の完了を依頼する。
 2. 前提資料を読み、要件ID（FR/DR/PR/NFR）の一覧を手元に作る。
-3. コンポーネントを設計し `docs/v2/architecture.md` に書く。少なくとも次を含める：
+3. コンポーネントを設計し `01_docs/architecture.md` に書く。少なくとも次を含める：
    - Collector：対象Coding AgentごとのHookアダプタ、項目の最小化・仮名化、失敗してもエージェントを止めない設計
    - ローカルバッファ：保存形式（SQLite／JSONL 等）、保存先、容量上限、送信済み管理
    - 同期クライアント：送信タイミング、再送、重複排除、認証（参加者端末ごとのトークン等）
-   - 研究用API・DB：v1 の Next.js＋Prisma＋PostgreSQL を流用する場合の構成変更点
+   - 研究用API・DB：言語・フレームワーク・DB・ホスティングの選定（選定理由はADRに残す）
    - 管理画面：収集の正常性・欠損の監視に限定し、個々の利用内容を閲覧しない設計
    - 分析用エクスポート：SQL抽出 → Python 分析に渡す形式（CSV／Parquet 等）
    - 配布・導入：参加者が初回の同意・インストール・研究用ID設定を数分で終えられる手順
    - 構成図は Mermaid で書く
-4. `docs/v2/data-model.md` を書く。イベントの共通スキーマ（`event_id`、研究用ID、セッション識別子、`event_type`、`agent_type`、時刻[UTC]、所要時間、成否、メタデータ）と、各 DR 項目の対応を表にする。エピソードとターンを生ログから派生させるロジック（時間ギャップの閾値を変えて再計算できること）を擬似コードで示す。
-5. 判断が必要な点はADRにまとめる（例：Collectorの実装言語、ローカルバッファ形式、v1機能の削除範囲、テスト基盤）。選択肢が拮抗する場合はユーザーに質問し、回答を待つ。
-6. 製品仕様の前提に不確かさがある場合（Hookのペイロード項目など）、ユーザーの許可を得たうえで `spikes/<名前>/` に最小の試作を作り、実際に取れる項目を確認する。結果は `docs/v2/agent-survey.md` に追記する。spike のコードは本実装に流用しない前提で書く。
-7. `docs/v2/implementation-plan.md` に実装計画を書く。
-   - マイルストーン例：M1 開発基盤（CI・テスト基盤・v1整理）→ M2 イベント受信API・DB → M3 Collector＋ローカルバッファ＋同期 → M4 管理画面（収集監視）→ M5 導入パッケージ・同意フロー → M6 エクスポートと分析用サンプルスクリプト → M7 小規模試行の準備チェック
-   - **最初のIssueは CI（GitHub Actions：型チェック・Lint・テスト・ビルド）とテスト基盤の整備** にする
+4. `01_docs/data-model.md` を書く。イベントの共通スキーマ（`event_id`、研究用ID、セッション識別子、`event_type`、`agent_type`、時刻[UTC]、所要時間、成否、メタデータ）と、各 DR 項目の対応を表にする。エピソードとターンを生ログから派生させるロジック（時間ギャップの閾値を変えて再計算できること）を擬似コードで示す。
+5. 判断が必要な点はADRにまとめる（例：サーバー側の技術スタック、Collectorの実装言語、ローカルバッファ形式、テスト基盤）。選択肢が拮抗する場合はユーザーに質問し、回答を待つ。
+6. 製品仕様の前提に不確かさがある場合（Hookのペイロード項目など）、ユーザーの許可を得たうえで `02_scripts/spikes/<名前>/` に最小の試作を作り、実際に取れる項目を確認する。結果は `01_docs/agent-survey.md` に追記する。spike のコードは本実装に流用しない前提で書く。
+7. `01_docs/implementation-plan.md` に実装計画を書く。
+   - マイルストーン例：M1 開発基盤（プロジェクトの雛形・CI・テスト基盤）→ M2 イベント受信API・DB → M3 Collector＋ローカルバッファ＋同期 → M4 管理画面（収集監視）→ M5 導入パッケージ・同意フロー → M6 エクスポートと分析用サンプルスクリプト → M7 小規模試行の準備チェック
+   - **最初のIssueはプロジェクトの雛形作成と CI（GitHub Actions：型チェック・Lint・テスト・ビルド）・テスト基盤の整備** にする。このIssueで `AGENTS.md` の開発コマンドと `.devin/blueprint.yaml` の knowledge を更新することを完了条件に含める
    - 各Issueに：目的、対応する要件ID、完了条件、依存するIssue、想定規模（S/M/L）を書く。1 Issue は 1 PR で終わる大きさにする
 8. ブランチ `devin/design-v2-<YYYYMMDD>` で成果物をコミットし、ドラフトPRを作成する。ユーザーのレビューに対応する。
 9. ユーザーが設計を承認したら、Issue作成の許可を得てから `implementation-plan.md` の内容で GitHub Issue を作成する（ラベル例：`v2`、`M1`〜`M7`）。作成したIssue番号を `implementation-plan.md` に追記し、次は `!rllm-impl` でIssueを1件ずつ実装できることを伝える。
@@ -55,14 +55,14 @@
 - [ ] Collector・同期の失敗が Coding Agent の通常動作を妨げない
 - [ ] 同期は再送しても重複しない（サーバー側の一意制約などで保証）
 - [ ] エピソード境界の閾値を変えて再計算できる
-- [ ] 実装計画の最初のIssueが CI・テスト基盤である
+- [ ] 実装計画の最初のIssueが プロジェクトの雛形・CI・テスト基盤である
 - [ ] 各Issueに完了条件と要件IDがある
 - [ ] 判断を伴う選択はADRとして残っている
 
 ## Advice and Pointers
 
-- v1 の資産（認証・RBAC・管理画面・Prisma）は流用を基本に考える。作り直す場合はADRで理由を書く。
-- このリポジトリの Next.js は学習データと異なる破壊的変更を含む（`AGENTS.md` 参照）。Next.js に関する設計判断の前に `node_modules/next/dist/docs/` を読む。
+- 技術スタックはゼロから選んでよい。v1（タグ `v1-chatbot`：Next.js 16＋Prisma 7＋PostgreSQL）の構成は参考にしてよいが、流用するかどうかも含めてADRで判断する。
+- フレームワークやライブラリは、学習データより新しいバージョンで破壊的変更が入っていることがある。採用するバージョンの公式ドキュメントを確認してから設計する。
 - Collector の配布形態は、参加者の手間（インストール・更新・停止）を最小にする観点で選ぶ。Node.js ランタイムを参加者に入れてもらう必要があるかどうかも判断材料にする。
 - 管理画面は「誰がどれだけ使ったか」の監視ツールにならないよう注意する。表示は収集の健全性（最終同期時刻、欠損、エラー件数）を中心にする。
 - 設計は過剰にしない。卒業研究の期間（試行＋本実施 4〜8週間）で運用できる単純さを優先する。
@@ -72,7 +72,7 @@
 
 - 要件定義書が未承認のまま設計を確定させること
 - ユーザーの許可なしに GitHub Issue を作成すること
-- spike 以外のアプリケーションコードの変更、v1 機能の削除
+- spike 以外のアプリケーションコードの追加
 - 実データの収集開始、参加者への配布、本番環境へのデプロイ
 - `main` ブランチへの直接 push、force push、自分の PR のマージ
 - 秘密情報（APIキー、パスワード、トークン、`.env`）のコミット
