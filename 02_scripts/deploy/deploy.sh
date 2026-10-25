@@ -12,7 +12,10 @@
 #   SERVICE          既定 research-llm
 #   ADMIN_EMAILS     管理画面にログインできる Google アカウント（カンマ区切り・必須）
 #   GOOGLE_CLIENT_ID 管理画面ログイン用 OAuth クライアントID（未作成なら空でよい）
-#   GEMINI_API_KEY / GOOGLE_CLIENT_SECRET  指定すると Secret Manager に登録する（未登録なら対話入力）
+#   GEMINI_API_KEY / GOOGLE_CLIENT_SECRET  シークレット未登録時に登録する値（未指定なら対話入力）
+#   UPDATE_SECRETS=1 登録済みのシークレットにも新しい値を追加する（無料枠は 6 バージョンまでなので必要時のみ）
+#
+# 無料枠に収めるため、Cloud Run は最小 0・最大 1 インスタンス、イメージは最新 2 つだけ残す。
 set -euo pipefail
 
 PROJECT_ID="${PROJECT_ID:-research-llm-512715}"
@@ -60,7 +63,7 @@ ensure_secret() { # name, env value, prompt
       echo
     fi
     printf '%s' "$value" | gc secrets versions add "$name" --data-file=-
-  elif [ -n "$value" ]; then
+  elif [ -n "$value" ] && [ "${UPDATE_SECRETS:-}" = "1" ]; then
     printf '%s' "$value" | gc secrets versions add "$name" --data-file=-
   fi
 }
@@ -80,6 +83,15 @@ done
 step "コンテナイメージをビルド（Cloud Build）"
 gc artifacts repositories describe "$REPO" --location="$REGION" >/dev/null 2>&1 \
   || gc artifacts repositories create "$REPO" --repository-format=docker --location="$REGION"
+POLICY_FILE="$(mktemp)"
+cat >"$POLICY_FILE" <<'JSON'
+[
+  {"name": "keep-latest-2", "action": {"type": "Keep"}, "mostRecentVersions": {"keepCount": 2}},
+  {"name": "delete-others", "action": {"type": "Delete"}, "condition": {"tagState": "any"}}
+]
+JSON
+gc artifacts repositories set-cleanup-policies "$REPO" --location="$REGION" --policy="$POLICY_FILE" --no-dry-run
+rm -f "$POLICY_FILE"
 IMAGE="$REGION-docker.pkg.dev/$PROJECT_ID/$REPO/server:$(date +%Y%m%d%H%M%S)"
 gc builds submit "$ROOT/02_scripts/server" --tag "$IMAGE"
 
