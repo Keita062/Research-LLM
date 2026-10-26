@@ -7,7 +7,8 @@ SERVER_URL="${SERVER_URL%/}"
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 EXT="$ROOT/02_scripts/extension"
 OUT="$ROOT/02_scripts/deploy/out"
-VERSION="$(node -p "require('$EXT/package.json').version")"
+# Git Bash の /c/... 形式のパスは Node が解決できないため、拡張フォルダからの相対パスで読む
+VERSION="$(cd "$EXT" && node -p "require('./package.json').version")"
 NAME="research-llm-agent-$VERSION"
 
 cd "$EXT"
