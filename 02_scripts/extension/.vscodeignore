@@ -1,0 +1,10 @@
+src/**
+test/**
+node_modules/**
+tsconfig.json
+eslint.config.mjs
+esbuild.mjs
+**/*.map
+**/*.ts
+dist/*.vsix
+*.bak

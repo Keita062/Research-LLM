@@ -1,0 +1,26 @@
+body{font-family:var(--vscode-font-family);font-size:var(--vscode-font-size);color:var(--vscode-foreground);padding:0 8px;margin:0}
+#app{display:flex;flex-direction:column;height:100vh}
+.bar{display:flex;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid var(--vscode-panel-border);font-size:12px;flex-wrap:wrap}
+.bar .sp{flex:1}
+#log{flex:1;overflow-y:auto;padding:8px 0}
+.msg{margin:6px 0;padding:6px 8px;border-radius:4px;white-space:pre-wrap;word-break:break-word}
+.user{background:var(--vscode-input-background);border:1px solid var(--vscode-input-border,transparent)}
+.model{background:transparent}
+.tool{font-family:var(--vscode-editor-font-family);font-size:12px;border-left:3px solid var(--vscode-textLink-foreground);padding:4px 8px;margin:4px 0}
+.tool.error,.tool.rejected{border-color:var(--vscode-errorForeground)}
+.tool.done{border-color:var(--vscode-testing-iconPassed,#3fb950)}
+.err{color:var(--vscode-errorForeground)}
+.approval{border:1px solid var(--vscode-focusBorder);padding:8px;margin:6px 0;border-radius:4px}
+.approval textarea,#input{width:100%;box-sizing:border-box;background:var(--vscode-input-background);color:var(--vscode-input-foreground);border:1px solid var(--vscode-input-border,#555);font-family:inherit;padding:4px}
+.row{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+button{background:var(--vscode-button-background);color:var(--vscode-button-foreground);border:none;padding:4px 10px;cursor:pointer;border-radius:2px}
+button.secondary{background:var(--vscode-button-secondaryBackground);color:var(--vscode-button-secondaryForeground)}
+button:disabled{opacity:.5;cursor:default}
+.composer{padding:6px 0 10px;border-top:1px solid var(--vscode-panel-border)}
+.screen{padding:12px 0}
+.screen h3{margin-top:0}
+.consent-item{margin:10px 0;padding:8px;border:1px solid var(--vscode-panel-border);border-radius:4px}
+.note{font-size:12px;opacity:.85}
+.paused{color:var(--vscode-editorWarning-foreground)}
+.msg pre{background:var(--vscode-textCodeBlock-background);padding:6px;overflow-x:auto;white-space:pre}
+.msg code{font-family:var(--vscode-editor-font-family)}

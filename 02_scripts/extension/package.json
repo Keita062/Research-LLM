@@ -1,0 +1,123 @@
+{
+  "name": "research-llm-agent",
+  "displayName": "Research LLM Agent",
+  "description": "研究用コーディングエージェント（卒業研究のログ収集に協力いただく参加者向け）",
+  "version": "0.1.0",
+  "publisher": "research-llm",
+  "private": true,
+  "license": "UNLICENSED",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "researchLlm",
+          "title": "Research LLM",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "researchLlm": [
+        {
+          "type": "webview",
+          "id": "researchLlm.chat",
+          "name": "エージェント"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "researchLlm.activate",
+        "title": "Research LLM: 招待コードを入力"
+      },
+      {
+        "command": "researchLlm.consent",
+        "title": "Research LLM: 研究への同意を確認・変更"
+      },
+      {
+        "command": "researchLlm.pauseCollection",
+        "title": "Research LLM: ログ収集を一時停止"
+      },
+      {
+        "command": "researchLlm.resumeCollection",
+        "title": "Research LLM: ログ収集を再開"
+      },
+      {
+        "command": "researchLlm.togglePause",
+        "title": "Research LLM: ログ収集の一時停止／再開を切り替え"
+      },
+      {
+        "command": "researchLlm.newConversation",
+        "title": "Research LLM: 新しい会話"
+      },
+      {
+        "command": "researchLlm.status",
+        "title": "Research LLM: 状態を表示"
+      }
+    ],
+    "configuration": {
+      "title": "Research LLM",
+      "properties": {
+        "researchLlm.serverUrl": {
+          "type": "string",
+          "default": "http://localhost:8080",
+          "description": "研究用サーバーのURL（通常は変更不要）"
+        },
+        "researchLlm.autoApproveEdits": {
+          "type": "boolean",
+          "default": false,
+          "description": "ファイルの編集・作成を承認なしで実行する（コマンド実行は常に承認が必要）"
+        },
+        "researchLlm.deniedFiles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            ".env",
+            ".env.*",
+            "*.pem",
+            "*.key",
+            "*.pfx",
+            "*.p12",
+            "id_rsa*",
+            "id_ed25519*",
+            "credentials*.json",
+            ".git",
+            ".ssh"
+          ],
+          "description": "エージェントに読み書きさせないファイル・フォルダのパターン（秘密情報の保護）"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "package": "node esbuild.mjs --production && vsce package --no-dependencies --allow-missing-repository --skip-license -o dist/research-llm-agent.vsix",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . && tsc --noEmit"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.15.0",
+    "eslint": "^9.15.0",
+    "typescript-eslint": "^8.15.0",
+    "typescript": "^5.6.0",
+    "vitest": "^3.2.0",
+    "@types/node": "^20.17.0",
+    "@types/vscode": "1.85.0",
+    "esbuild": "^0.25.0",
+    "@vscode/vsce": "^3.2.0"
+  }
+}
