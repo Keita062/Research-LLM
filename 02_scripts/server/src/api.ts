@@ -160,6 +160,8 @@ export function createApi({ store, llm, config, now = () => new Date() }: ApiDep
       first = await iterator.next();
     } catch (err) {
       const status = err instanceof LlmError ? err.status : 502;
+      // 原因調査のため Gemini のエラー内容を記録する（参加者の入力本文は含まない）
+      console.error(`[chat] upstream error participant=${p.id} model=${settings.model} status=${status}: ${(err as Error).message}`);
       const scope = status === 429 ? "upstream" : undefined;
       return c.json({ error: status === 429 ? "rate_limited" : "upstream_error", scope }, status === 429 ? 429 : 502);
     }
@@ -179,6 +181,7 @@ export function createApi({ store, llm, config, now = () => new Date() }: ApiDep
         }
       } catch (err) {
         const status = err instanceof LlmError ? err.status : 502;
+        console.error(`[chat] upstream error during stream participant=${p.id} model=${settings.model} status=${status}: ${(err as Error).message}`);
         await s.write(JSON.stringify({ type: "error", status, message: "upstream_error" }) + "\n");
       }
     });

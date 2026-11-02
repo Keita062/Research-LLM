@@ -4,6 +4,8 @@
     const el = document.createElement(tag);
     for (const [k, v] of Object.entries(attrs)) {
       if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+      // CSP で style 属性は無効になるため、CSSOM 経由で設定する
+      else if (k === "style") el.style.cssText = v;
       else if (v !== undefined && v !== false) el.setAttribute(k, v === true ? "" : v);
     }
     for (const c of children.flat()) if (c !== null && c !== undefined) el.append(c);
