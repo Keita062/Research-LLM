@@ -50,6 +50,21 @@ describe("管理画面", () => {
     expect(await ctx.store.getParticipant(p.id)).toBeNull();
   });
 
+  it("添付画像はログインした管理者だけが開ける", async () => {
+    const ctx = setup();
+    const cookie = await adminCookie(ctx.app);
+    const p = await activated(ctx);
+    const data = Buffer.from("fake-image").toString("base64");
+    const e = event("user_prompt", { content: { text: "見て", images: [{ mimeType: "image/png", data }] } });
+    await p.call("/events", { body: { events: [e] } });
+    const page = await (await ctx.app.request("/admin/events", { headers: { cookie } })).text();
+    expect(page).toContain(`/admin/attachments/${e.eventId}-0`);
+    const res = await ctx.app.request(`/admin/attachments/${e.eventId}-0`, { headers: { cookie } });
+    expect(res.headers.get("content-type")).toBe("image/png");
+    expect(Buffer.from(await res.arrayBuffer()).toString()).toBe("fake-image");
+    expect((await ctx.app.request(`/admin/attachments/${e.eventId}-0`)).status).toBe(302);
+  });
+
   it("CSV は選択した列だけを出力する", async () => {
     const ctx = setup();
     const cookie = await adminCookie(ctx.app);

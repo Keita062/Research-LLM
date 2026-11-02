@@ -4,6 +4,7 @@ import {
   type Participant,
   type Settings,
   type Store,
+  type StoredAttachment,
   type StoredEvent,
   type Usage,
 } from "./types.js";
@@ -12,6 +13,7 @@ export class MemoryStore implements Store {
   private settings: Settings = { ...DEFAULT_SETTINGS };
   private participants = new Map<string, Participant>();
   private events = new Map<string, StoredEvent>();
+  private attachments = new Map<string, StoredAttachment>();
   private usage = new Map<string, Usage>();
   private counter = 0;
 
@@ -61,6 +63,15 @@ export class MemoryStore implements Store {
   async deleteParticipant(id: string) {
     this.participants.delete(id);
     for (const [k, e] of this.events) if (e.participantId === id) this.events.delete(k);
+    for (const [k, a] of this.attachments) if (a.participantId === id) this.attachments.delete(k);
+  }
+
+  async insertAttachments(list: StoredAttachment[]) {
+    for (const a of list) if (!this.attachments.has(a.attachmentId)) this.attachments.set(a.attachmentId, a);
+  }
+
+  async getAttachment(id: string) {
+    return this.attachments.get(id) ?? null;
   }
 
   async insertEvents(events: StoredEvent[]) {

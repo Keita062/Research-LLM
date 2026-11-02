@@ -1,4 +1,4 @@
-import type { Participant, StoredEvent } from "./store/types.js";
+import type { Participant, StoredAttachment, StoredEvent } from "./store/types.js";
 
 export const EVENT_TYPES = [
   "session_start",
@@ -18,6 +18,12 @@ export const EVENT_TYPES = [
 ] as const;
 
 export const CONTENT_KEYS = ["text", "feedback"] as const;
+
+/** 添付画像の制限（拡張側で縮小してから送る。Firestore の 1 ドキュメント 1MiB 制限に収める） */
+export const ATTACHMENT_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
+export const MAX_ATTACHMENTS_PER_EVENT = 4;
+export const MAX_ATTACHMENT_BASE64 = 1_000_000;
+const BASE64 = /^[A-Za-z0-9+/]+={0,2}$/;
 
 export interface ClientEvent {
   eventId: string;
@@ -47,16 +53,18 @@ function str(v: unknown, max = 100): string | null {
 
 /**
  * 拡張から届いたイベントを検証し、同意状態に従ってフィルタする。
- * メタデータ未同意なら全件破棄、本文未同意なら本文を落とす（拡張側のフィルタに加えた二重の防御）
+ * メタデータ未同意なら全件破棄、本文未同意なら本文と添付画像を落とす（拡張側のフィルタに加えた二重の防御）
+ * 添付画像は別に保存し、イベントの content.attachments に ID をカンマ区切りで残す
  */
 export function sanitizeEvents(
   input: unknown[],
   participant: Participant,
   now: Date,
-): StoredEvent[] {
+): { events: StoredEvent[]; attachments: StoredAttachment[] } {
   const consent = participant.consent;
-  if (!consent || !consent.metadata) return [];
-  if (participant.status !== "active") return [];
+  const attachments: StoredAttachment[] = [];
+  if (!consent || !consent.metadata) return { events: [], attachments };
+  if (participant.status !== "active") return { events: [], attachments };
   const receivedAt = now.toISOString();
   const expireAt = new Date(now.getTime() + RETENTION_MS).toISOString();
   const out: StoredEvent[] = [];
@@ -67,6 +75,7 @@ export function sanitizeEvents(
     if (!(EVENT_TYPES as readonly string[]).includes(e.type)) continue;
     const occurred = new Date(e.occurredAt);
     if (Number.isNaN(occurred.getTime())) continue;
+    const eventId = e.eventId.toLowerCase();
     let content: Record<string, string> | null = null;
     if (consent.content && e.content && typeof e.content === "object") {
       content = {};
@@ -74,11 +83,22 @@ export function sanitizeEvents(
         const v = e.content[k];
         if (typeof v === "string") content[k] = v.slice(0, 100_000);
       }
+      const images = Array.isArray(e.content.images) ? e.content.images.slice(0, MAX_ATTACHMENTS_PER_EVENT) : [];
+      const ids: string[] = [];
+      images.forEach((img: unknown, i: number) => {
+        const { mimeType, data } = (img ?? {}) as { mimeType?: unknown; data?: unknown };
+        if (typeof mimeType !== "string" || !ATTACHMENT_MIME_TYPES.includes(mimeType)) return;
+        if (typeof data !== "string" || data.length > MAX_ATTACHMENT_BASE64 || !BASE64.test(data)) return;
+        const attachmentId = `${eventId}-${i}`;
+        ids.push(attachmentId);
+        attachments.push({ attachmentId, participantId: participant.id, eventId, mimeType, data, createdAt: receivedAt, expireAt });
+      });
+      if (ids.length) content.attachments = ids.join(",");
       if (Object.keys(content).length === 0) content = null;
     }
     const payload = e.payload && typeof e.payload === "object" ? e.payload : {};
     out.push({
-      eventId: e.eventId.toLowerCase(),
+      eventId,
       participantId: participant.id,
       sessionId: str(e.sessionId) ?? "",
       conversationId: str(e.conversationId),
@@ -94,5 +114,5 @@ export function sanitizeEvents(
       content,
     });
   }
-  return out;
+  return { events: out, attachments };
 }

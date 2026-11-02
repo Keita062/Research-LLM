@@ -10,13 +10,34 @@ export interface EventInput {
   conversationId?: string | null;
   turnIndex?: number | null;
   payload?: Record<string, unknown>;
-  content?: { text?: string; feedback?: string };
+  content?: { text?: string; feedback?: string; images?: ImageInput[] };
+}
+
+/** 依頼に添付した画像（webview で縮小済み。data は base64） */
+export interface ImageInput {
+  mimeType: string;
+  data: string;
 }
 
 const BUFFER_KEY = "researchLlm.eventBuffer";
 const PAUSED_KEY = "researchLlm.collectionPaused";
 const MAX_BUFFER = 10_000;
 const BATCH = 200;
+/** 画像を含むと1件が大きくなるため、1回の送信をこの文字数までに抑える */
+const MAX_BATCH_CHARS = 8_000_000;
+
+/** 先頭から、件数と合計サイズの上限に収まる分を取り出す（1件目は必ず含める） */
+export function takeBatch(buf: unknown[], maxCount = BATCH, maxChars = MAX_BATCH_CHARS): unknown[] {
+  const out: unknown[] = [];
+  let chars = 0;
+  for (const e of buf) {
+    const size = JSON.stringify(e).length;
+    if (out.length >= maxCount || (out.length > 0 && chars + size > maxChars)) break;
+    out.push(e);
+    chars += size;
+  }
+  return out;
+}
 
 /** イベントを端末内に貯めて定期送信する。送信失敗時は保持して再送（eventId でサーバー側が重複排除） */
 export class EventLogger {
@@ -82,7 +103,7 @@ export class EventLogger {
       for (;;) {
         const buf = this.buffer();
         if (buf.length === 0) break;
-        const batch = buf.slice(0, BATCH);
+        const batch = takeBatch(buf);
         await this.send(batch);
         const ids = new Set(batch.map((x) => (x as { eventId: string }).eventId));
         await this.storage.update(BUFFER_KEY, this.buffer().filter((x) => !ids.has((x as { eventId: string }).eventId)));

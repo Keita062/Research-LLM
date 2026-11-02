@@ -5,7 +5,8 @@ import { ApiClient, ApiError, type Status } from "./apiClient";
 import { lineDiffCounts } from "./diff";
 import { ChatViewProvider, type FromWebview, type Screen } from "./chatView";
 import { toolConfig } from "./denylist";
-import { EventLogger } from "./eventLogger";
+import { EventLogger, type ImageInput } from "./eventLogger";
+import { validImages } from "./images";
 import { DENY_MESSAGES, describeError, toolSummary } from "./messages";
 import { compareVersions } from "./version";
 
@@ -133,10 +134,12 @@ export function activate(context: vscode.ExtensionContext): void {
     await refresh();
   }
 
-  async function onSend(text: string): Promise<void> {
+  async function onSend(text: string, rawImages: ImageInput[] = []): Promise<void> {
     await refresh();
     if (lastScreen !== "chat" || agent.busy || logger.paused) return;
-    emit({ type: "user", text });
+    const images = validImages(rawImages);
+    if (!text && images.length === 0) return;
+    emit({ type: "user", text, images: images.map((i) => `data:${i.mimeType};base64,${i.data}`) });
     view.post({ type: "busy", busy: true });
     try {
       await agent.send(text, {
@@ -165,7 +168,7 @@ export function activate(context: vscode.ExtensionContext): void {
           diffDocs.delete(`${req.id}-after`);
           return d;
         },
-      });
+      }, images);
     } catch (e) {
       emit({ type: "error", message: describeError(e) });
       if (e instanceof ApiError && (e.status === 403 || e.status === 401)) await refresh();
@@ -200,7 +203,7 @@ export function activate(context: vscode.ExtensionContext): void {
       case "showConsent":
         return postState("consent");
       case "send":
-        return onSend(m.text);
+        return onSend(m.text, m.images);
       case "cancel":
         agent.cancel();
         rejectPending();

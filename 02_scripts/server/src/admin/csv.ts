@@ -36,6 +36,7 @@ export const CSV_COLUMNS: CsvColumn[] = [
   { key: "payload_json", label: "payload(JSON全体)", defaultOn: false, get: (e) => JSON.stringify(e.payload) },
   { key: "content_text", label: "本文", defaultOn: false, get: (e) => e.content?.text },
   { key: "content_feedback", label: "修正指示の本文", defaultOn: false, get: (e) => e.content?.feedback },
+  { key: "content_attachments", label: "添付画像ID", defaultOn: false, get: (e) => e.content?.attachments },
 ];
 
 function cell(v: unknown): string {

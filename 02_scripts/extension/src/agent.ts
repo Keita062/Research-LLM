@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { ApiError, type ApiClient, type Content, type Part } from "./apiClient";
 import { fileExtension } from "./diff";
-import type { EventLogger } from "./eventLogger";
+import type { EventInput, EventLogger, ImageInput } from "./eventLogger";
 import { APPROVAL_REQUIRED, applyEdit, prepareEdit, runCommand, runReadTool, TOOL_DECLARATIONS, type PreparedEdit, type ToolOutcome } from "./tools";
 
 export type Decision = { decision: "approve" } | { decision: "reject" } | { decision: "feedback"; feedback: string };
@@ -80,11 +80,11 @@ export class Agent {
     void this.log("user_cancel", { phase });
   }
 
-  private log(type: string, payload: Record<string, unknown>, content?: { text?: string; feedback?: string }) {
+  private log(type: string, payload: Record<string, unknown>, content?: EventInput["content"]) {
     return this.logger.log({ type, conversationId: this.conversationId, turnIndex: this.turnIndex, payload, content });
   }
 
-  async send(text: string, ui: AgentUi): Promise<void> {
+  async send(text: string, ui: AgentUi, images: ImageInput[] = []): Promise<void> {
     if (this.abort) throw new Error("busy");
     const abort = (this.abort = new AbortController());
     try {
@@ -93,8 +93,14 @@ export class Agent {
         await this.log("conversation_start", {});
       }
       this.turnIndex++;
-      await this.log("user_prompt", { chars: text.length, msSinceLastResponse: this.lastResponseAt ? Date.now() - this.lastResponseAt : null }, { text });
-      this.history.push({ role: "user", parts: [{ text }] });
+      await this.log(
+        "user_prompt",
+        { chars: text.length, imageCount: images.length, msSinceLastResponse: this.lastResponseAt ? Date.now() - this.lastResponseAt : null },
+        images.length ? { text, images } : { text },
+      );
+      const parts: Part[] = images.map((img) => ({ inlineData: { mimeType: img.mimeType, data: img.data } }));
+      if (text) parts.unshift({ text });
+      this.history.push({ role: "user", parts });
       let budget = MAX_STEPS;
       while (!abort.signal.aborted) {
         if (budget-- <= 0) {
