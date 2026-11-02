@@ -5,8 +5,13 @@
   const { h, activateScreen, consentScreen, messageScreen } = window.Screens;
   const app = document.getElementById("app");
   let state = { screen: "offline" };
-  let log, input, sendBtn, cancelBtn, current;
+  let log, input, sendBtn, cancelBtn, attachBtn, attachRow, current;
+  /** 送信前の添付画像 { mimeType, data(base64), url } */
+  let pending = [];
   const tools = new Map();
+  const MAX_IMAGES = 4;
+  const MAX_SIDE = 1568;
+  const MAX_BASE64 = 900_000;
 
   const TOOL_LABEL = { read_file: "ファイルを読む", list_files: "一覧", search_files: "検索", edit_file: "ファイルを編集", write_file: "ファイルを書き込む", run_command: "コマンド実行" };
   const STATUS_LABEL = { pending: "承認待ち", running: "実行中", done: "完了", error: "失敗", rejected: "拒否" };
@@ -19,6 +24,7 @@
     if (!sendBtn) return;
     const paused = !!state.paused;
     sendBtn.disabled = busy || paused;
+    attachBtn.disabled = paused;
     cancelBtn.style.display = busy ? "" : "none";
     input.disabled = paused;
     input.placeholder = paused ? "ログ収集を一時停止中は使えません。上の「収集を再開」を押すと使えます" : "エージェントへの指示（Ctrl+Enter で送信）";
@@ -38,15 +44,86 @@
     );
   }
 
+  /** 画像を縮小して JPEG にする（送信量と保存容量を抑えるため） */
+  async function toJpeg(blob) {
+    const bmp = await createImageBitmap(blob);
+    const canvas = document.createElement("canvas");
+    for (const [shrink, quality] of [[1, 0.85], [1, 0.7], [0.7, 0.7], [0.5, 0.6]]) {
+      const scale = Math.min(1, MAX_SIDE / Math.max(bmp.width, bmp.height)) * shrink;
+      canvas.width = Math.max(1, Math.round(bmp.width * scale));
+      canvas.height = Math.max(1, Math.round(bmp.height * scale));
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+      const url = canvas.toDataURL("image/jpeg", quality);
+      const data = url.slice(url.indexOf(",") + 1);
+      if (data.length <= MAX_BASE64) return { mimeType: "image/jpeg", data, url };
+    }
+    return null;
+  }
+
+  function attachNote(text) {
+    attachRow.append(h("span", { class: "note err" }, text));
+  }
+
+  function renderAttachments() {
+    if (!attachRow) return;
+    attachRow.replaceChildren(
+      ...pending.map((img, i) =>
+        h("span", { class: "pending" },
+          h("img", { src: img.url, class: "thumb", alt: `添付画像${i + 1}` }),
+          h("button", { class: "secondary remove", title: "外す", onclick: () => { pending.splice(i, 1); renderAttachments(); } }, "×"),
+        ),
+      ),
+    );
+    attachRow.style.display = pending.length ? "" : "none";
+  }
+
+  /** 縮小処理が終わるまで送信を待たせるため、追加処理を順につなぐ */
+  let preparing = Promise.resolve();
+  function addFiles(files) {
+    const list = [...files];
+    preparing = preparing.then(() => prepareFiles(list)).catch(() => undefined);
+    return preparing;
+  }
+
+  async function prepareFiles(files) {
+    const images = files.filter((f) => f.type.startsWith("image/"));
+    const notes = [];
+    for (const f of images) {
+      if (pending.length >= MAX_IMAGES) {
+        notes.push(`画像は1回に${MAX_IMAGES}枚までです。`);
+        break;
+      }
+      try {
+        const img = await toJpeg(f);
+        if (img) pending.push(img);
+        else notes.push("画像が大きすぎるため添付できませんでした。");
+      } catch {
+        notes.push("この画像は読み込めませんでした。");
+      }
+    }
+    renderAttachments();
+    if (notes.length) {
+      attachRow.style.display = "";
+      notes.forEach(attachNote);
+    }
+  }
+
   function chatScreen() {
     const bar = chatBar();
     log = h("div", { id: "log" });
     input = h("textarea", { id: "input", rows: "3", placeholder: "エージェントへの指示（Ctrl+Enter で送信）" });
-    const send = () => {
+    const send = async () => {
+      if (sendBtn.disabled) return;
+      await preparing;
       const text = input.value.trim();
-      if (!text || sendBtn.disabled) return;
+      if ((!text && pending.length === 0) || sendBtn.disabled) return;
       input.value = "";
-      post({ type: "send", text });
+      post({ type: "send", text, images: pending.map(({ mimeType, data }) => ({ mimeType, data })) });
+      pending = [];
+      renderAttachments();
     };
     input.addEventListener("keydown", (e) => {
       if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
@@ -54,14 +131,35 @@
         send();
       }
     });
+    // 画像の貼り付け（スクリーンショットなど）
+    input.addEventListener("paste", (e) => {
+      const files = [...(e.clipboardData?.files ?? [])].filter((f) => f.type.startsWith("image/"));
+      if (files.length === 0) return;
+      e.preventDefault();
+      void addFiles(files);
+    });
+    const fileInput = h("input", { type: "file", accept: "image/png,image/jpeg,image/webp,image/gif", multiple: true, style: "display:none" });
+    fileInput.addEventListener("change", () => {
+      void addFiles(fileInput.files ?? []);
+      fileInput.value = "";
+    });
+    attachRow = h("div", { class: "attachments", style: "display:none" });
     sendBtn = h("button", { onclick: send }, "送信");
+    attachBtn = h("button", { class: "secondary", onclick: () => fileInput.click() }, "画像を添付");
     cancelBtn = h("button", { class: "secondary", style: "display:none", onclick: () => post({ type: "cancel" }) }, "中止");
-    return [bar, log, h("div", { class: "composer" }, input, h("div", { class: "row" }, sendBtn, cancelBtn))];
+    const composer = h("div", { class: "composer" }, attachRow, input, fileInput, h("div", { class: "row" }, sendBtn, attachBtn, cancelBtn));
+    composer.addEventListener("dragover", (e) => e.preventDefault());
+    composer.addEventListener("drop", (e) => {
+      e.preventDefault();
+      if (!input.disabled) void addFiles(e.dataTransfer?.files ?? []);
+    });
+    renderAttachments();
+    return [bar, log, composer];
   }
 
   function render() {
     app.replaceChildren();
-    log = input = sendBtn = cancelBtn = current = undefined;
+    log = input = sendBtn = cancelBtn = attachBtn = attachRow = current = undefined;
     tools.clear();
     const s = state.screen;
     if (s === "activate") app.append(activateScreen(post, state));
@@ -71,6 +169,12 @@
     else if (s === "offline") app.append(messageScreen(post, "接続中…", state.message, !!state.message));
     else app.append(...chatScreen());
     setBusy(!!state.busy);
+  }
+
+  function addUser(text, images) {
+    const el = addMsg("user", text);
+    if (images && images.length) el.append(h("div", { class: "thumbs" }, ...images.map((src, i) => h("img", { src, class: "thumb", alt: `添付画像${i + 1}` }))));
+    scroll();
   }
 
   function addMsg(cls, text) {
@@ -133,7 +237,7 @@
       return;
     }
     if (!log) return;
-    if (m.type === "user") addMsg("user", m.text);
+    if (m.type === "user") addUser(m.text, m.images);
     else if (m.type === "delta") {
       if (!current) current = addMsg("model", "");
       current.dataset.raw = (current.dataset.raw || "") + m.text;
@@ -147,7 +251,7 @@
     else if (m.type === "cleared") log.replaceChildren();
     else if (m.type === "replay") {
       for (const it of m.items) {
-        if (it.type === "user") addMsg("user", it.text);
+        if (it.type === "user") addUser(it.text, it.images);
         else if (it.type === "model") addMsg("model", "").innerHTML = window.renderMd(it.text);
         else if (it.type === "tool") onTool(it);
         else if (it.type === "error") addMsg("err", it.message);

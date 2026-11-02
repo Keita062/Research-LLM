@@ -1,10 +1,11 @@
 import * as vscode from "vscode";
+import type { ImageInput } from "./eventLogger";
 
 export type FromWebview =
   | { type: "ready" }
   | { type: "activate"; code: string }
   | { type: "consent"; use: boolean; metadata: boolean; content: boolean }
-  | { type: "send"; text: string }
+  | { type: "send"; text: string; images?: ImageInput[] }
   | { type: "cancel" }
   | { type: "approval"; id: string; decision: "approve" | "reject" | "feedback"; feedback?: string }
   | { type: "newConversation" }
@@ -31,7 +32,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     const nonce = Array.from({ length: 32 }, () => Math.floor(Math.random() * 36).toString(36)).join("");
     view.webview.html = `<!DOCTYPE html>
 <html lang="ja"><head><meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${view.webview.cspSource}; script-src 'nonce-${nonce}';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${view.webview.cspSource}; img-src data:; script-src 'nonce-${nonce}';">
 <link rel="stylesheet" href="${uri("chat.css")}"></head>
 <body><div id="app"></div>
 <script nonce="${nonce}" src="${uri("markdown.js")}"></script>

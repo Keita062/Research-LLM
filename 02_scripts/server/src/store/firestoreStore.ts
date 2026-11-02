@@ -5,6 +5,7 @@ import {
   type Participant,
   type Settings,
   type Store,
+  type StoredAttachment,
   type StoredEvent,
   type Usage,
 } from "./types.js";
@@ -24,7 +25,7 @@ function toEvent(d: EventDoc): StoredEvent {
  *   events: type ASC, occurredAt DESC
  *   events: participantId ASC, type ASC, occurredAt DESC
  *   events: participantId ASC, receivedAt ASC
- * TTL ポリシー: events.expireAt, usage.expireAt
+ * TTL ポリシー: events.expireAt, usage.expireAt, attachments.expireAt
  */
 export class FirestoreStore implements Store {
   constructor(private db: Firestore = new Firestore()) {}
@@ -86,12 +87,14 @@ export class FirestoreStore implements Store {
   }
 
   async deleteParticipant(id: string) {
-    for (;;) {
-      const q = await this.db.collection("events").where("participantId", "==", id).limit(400).get();
-      if (q.empty) break;
-      const batch = this.db.batch();
-      q.docs.forEach((d) => batch.delete(d.ref));
-      await batch.commit();
+    for (const name of ["events", "attachments"]) {
+      for (;;) {
+        const q = await this.db.collection(name).where("participantId", "==", id).limit(name === "events" ? 400 : 20).get();
+        if (q.empty) break;
+        const batch = this.db.batch();
+        q.docs.forEach((d) => batch.delete(d.ref));
+        await batch.commit();
+      }
     }
     await this.db.collection("participants").doc(id).delete();
   }
@@ -110,6 +113,25 @@ export class FirestoreStore implements Store {
       }),
     );
     return results.reduce<number>((a, b) => a + b, 0);
+  }
+
+  async insertAttachments(list: StoredAttachment[]) {
+    await Promise.all(
+      list.map(async (a) => {
+        try {
+          await this.db.collection("attachments").doc(a.attachmentId).create({ ...a, expireAt: Timestamp.fromDate(new Date(a.expireAt)) });
+        } catch (err) {
+          if ((err as { code?: number }).code !== ALREADY_EXISTS) throw err;
+        }
+      }),
+    );
+  }
+
+  async getAttachment(id: string) {
+    const snap = await this.db.collection("attachments").doc(id).get();
+    if (!snap.exists) return null;
+    const d = snap.data() as Omit<StoredAttachment, "expireAt"> & { expireAt: Timestamp };
+    return { ...d, expireAt: d.expireAt.toDate().toISOString() };
   }
 
   /** 条件に合う直近 limit 件を時系列（古い順）で返す */

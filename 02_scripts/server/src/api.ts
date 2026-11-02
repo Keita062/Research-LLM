@@ -122,7 +122,8 @@ export function createApi({ store, llm, config, now = () => new Date() }: ApiDep
     const p = c.get("participant");
     const body = await c.req.json<{ events?: unknown[] }>().catch(() => ({}) as never);
     const list = Array.isArray(body?.events) ? body.events.slice(0, 500) : [];
-    const events = sanitizeEvents(list, p, now());
+    const { events, attachments } = sanitizeEvents(list, p, now());
+    if (attachments.length) await store.insertAttachments(attachments);
     const inserted = events.length ? await store.insertEvents(events) : 0;
     if (inserted > 0) await store.updateParticipant(p.id, { lastEventAt: now().toISOString() });
     return c.json({ received: list.length, accepted: events.length, inserted });
