@@ -24,9 +24,10 @@
     input.placeholder = paused ? "ログ収集を一時停止中は使えません。上の「収集を再開」を押すと使えます" : "エージェントへの指示（Ctrl+Enter で送信）";
   }
 
-  function chatScreen() {
+  /** 上部のバー。状態が変わるたびに作り直す（会話欄・入力欄には触らない） */
+  function chatBar() {
     const u = state.usage;
-    const bar = h("div", { class: "bar" },
+    return h("div", { class: "bar" },
       h("span", {}, `ID: ${state.participantId || ""}`),
       u ? h("span", {}, `本日 ${u.requestsToday}/${u.requestsPerDay}回`) : null,
       state.paused ? h("span", { class: "paused" }, "ログ収集を一時停止中（エージェントは使えません）") : null,
@@ -35,6 +36,10 @@
       h("button", { class: "secondary", onclick: () => post({ type: "newConversation" }) }, "新しい会話"),
       h("button", { class: "secondary", onclick: () => post({ type: "showConsent" }) }, "同意"),
     );
+  }
+
+  function chatScreen() {
+    const bar = chatBar();
     log = h("div", { id: "log" });
     input = h("textarea", { id: "input", rows: "3", placeholder: "エージェントへの指示（Ctrl+Enter で送信）" });
     const send = () => {
@@ -122,7 +127,7 @@
       const keepChat = state.screen === "chat" && m.screen === "chat" && log;
       state = m;
       if (keepChat) {
-        app.firstChild.replaceWith(chatScreen()[0]);
+        app.firstChild.replaceWith(chatBar());
         setBusy(!!m.busy);
       } else render();
       return;
