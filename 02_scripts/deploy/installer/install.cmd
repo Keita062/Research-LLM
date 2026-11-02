@@ -4,7 +4,8 @@ setlocal
 echo Research LLM Agent をインストールします...
 set "VSIX=%~dp0research-llm-agent.vsix"
 set "CODE="
-where code >nul 2>nul && set "CODE=code"
+rem code.cmd はフルパスで呼ぶ。名前だけで呼ぶと code.cmd 内の %~dp0 がずれて Code.exe を見つけられない
+for /f "delims=" %%i in ('where code.cmd 2^>nul') do if not defined CODE set "CODE=%%i"
 if not defined CODE if exist "%LOCALAPPDATA%\Programs\Microsoft VS Code\bin\code.cmd" set "CODE=%LOCALAPPDATA%\Programs\Microsoft VS Code\bin\code.cmd"
 if not defined CODE if exist "%ProgramFiles%\Microsoft VS Code\bin\code.cmd" set "CODE=%ProgramFiles%\Microsoft VS Code\bin\code.cmd"
 if not defined CODE (
