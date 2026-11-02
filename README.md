@@ -5,8 +5,8 @@
 研究室メンバーが普段の開発（VS Code／Unity）で使うAIコーディングエージェントの利用イベントを、本人の同意のもとで自動収集する基盤を作ります。
 現在は要件定義の前の段階で、アプリケーションコードはまだありません。
 
-- 研究目的・RQ：[00_context/research-questions.md](00_context/research-questions.md)
-- 開発の前提と制約：[00_context/research-context.md](00_context/research-context.md)
+- 研究目的・RQ：[00_context/研究設計整理.md](00_context/研究設計整理.md)
+- 開発の前提と制約：[00_context/研究コンテキスト.md](00_context/研究コンテキスト.md)
 - 作業ルール・開発の進め方：[AGENTS.md](AGENTS.md)
 
 ## フォルダ構成

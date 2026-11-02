@@ -27,7 +27,7 @@ cp dist/research-llm-agent.vsix "$OUT/$NAME/"
 cp "$ROOT/02_scripts/deploy/installer/install.cmd" "$OUT/$NAME/"
 cp "$ROOT/02_scripts/deploy/installer/install.command" "$OUT/$NAME/"
 chmod +x "$OUT/$NAME/install.command"
-cp "$ROOT/01_docs/participant-guide.md" "$OUT/$NAME/はじめにお読みください.md"
+cp "$ROOT/01_docs/参加者向け手順書.md" "$OUT/$NAME/はじめにお読みください.md"
 cd "$OUT"
 rm -f "$NAME.zip"
 if command -v zip >/dev/null; then zip -qr "$NAME.zip" "$NAME"; else powershell -NoProfile -Command "Compress-Archive -Path '$NAME' -DestinationPath '$NAME.zip'"; fi

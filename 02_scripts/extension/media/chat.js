@@ -17,8 +17,11 @@
 
   function setBusy(busy) {
     if (!sendBtn) return;
-    sendBtn.disabled = busy;
+    const paused = !!state.paused;
+    sendBtn.disabled = busy || paused;
     cancelBtn.style.display = busy ? "" : "none";
+    input.disabled = paused;
+    input.placeholder = paused ? "ログ収集を一時停止中は使えません。上の「収集を再開」を押すと使えます" : "エージェントへの指示（Ctrl+Enter で送信）";
   }
 
   function chatScreen() {
@@ -26,7 +29,7 @@
     const bar = h("div", { class: "bar" },
       h("span", {}, `ID: ${state.participantId || ""}`),
       u ? h("span", {}, `本日 ${u.requestsToday}/${u.requestsPerDay}回`) : null,
-      state.paused ? h("span", { class: "paused" }, "ログ収集を一時停止中") : null,
+      state.paused ? h("span", { class: "paused" }, "ログ収集を一時停止中（エージェントは使えません）") : null,
       h("span", { class: "sp" }),
       h("button", { class: "secondary", onclick: () => post({ type: "setPaused", paused: !state.paused }) }, state.paused ? "収集を再開" : "収集を一時停止"),
       h("button", { class: "secondary", onclick: () => post({ type: "newConversation" }) }, "新しい会話"),
