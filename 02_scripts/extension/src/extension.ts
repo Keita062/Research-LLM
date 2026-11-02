@@ -41,7 +41,7 @@ export function activate(context: vscode.ExtensionContext): void {
   let lastScreen: Screen = "offline";
   const statusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
   statusBar.command = "researchLlm.togglePause";
-  statusBar.tooltip = "Research LLM：クリックでログ収集を一時停止／再開";
+  statusBar.tooltip = "Research LLM：クリックでログ収集を一時停止／再開（一時停止中はエージェントを使えません）";
   context.subscriptions.push(statusBar);
 
   function updateStatusBar(): void {
@@ -135,7 +135,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
   async function onSend(text: string): Promise<void> {
     await refresh();
-    if (lastScreen !== "chat" || agent.busy) return;
+    if (lastScreen !== "chat" || agent.busy || logger.paused) return;
     emit({ type: "user", text });
     view.post({ type: "busy", busy: true });
     try {
@@ -219,6 +219,11 @@ export function activate(context: vscode.ExtensionContext): void {
         saveConversation();
         return;
       case "setPaused":
+        // 一時停止中はエージェントを使えない。実行中の依頼は止めてから記録を止める（中止イベントを残すため）
+        if (m.paused && agent.busy) {
+          agent.cancel("paused");
+          rejectPending();
+        }
         await logger.setPaused(m.paused);
         updateStatusBar();
         return refresh();

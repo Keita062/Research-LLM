@@ -41,5 +41,5 @@ knowledge:
   - name: project
     contents: |
       作業ルール・フォルダ構成は AGENTS.md を参照。
-      研究目的・RQ の正本は 00_context/research-questions.md。
-      デプロイ・運用は 01_docs/operations-guide.md。
+      研究目的・RQ の正本は 00_context/研究設計整理.md。
+      デプロイ・運用は 01_docs/運用手順書.md。
