@@ -34,7 +34,7 @@ export interface Settings {
 
 export const DEFAULT_SETTINGS: Settings = {
   globalStopped: false,
-  model: "gemini-3.8-flash",
+  model: "gemini-3.5-flash",
   globalRequestsPerMinute: 10,
   globalRequestsPerDay: 250,
   perUserRequestsPerDay: 80,
