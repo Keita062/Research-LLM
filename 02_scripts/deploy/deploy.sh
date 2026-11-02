@@ -42,6 +42,7 @@ fi
 step "Firestore TTL（受信から1年で自動削除）"
 gc firestore fields ttls update expireAt --collection-group=events --enable-ttl --async || true
 gc firestore fields ttls update expireAt --collection-group=usage --enable-ttl --async || true
+gc firestore fields ttls update expireAt --collection-group=attachments --enable-ttl --async || true
 
 step "Firestore 複合インデックス"
 create_index() {

@@ -86,6 +86,32 @@ describe("参加者API", () => {
     expect(r2).toMatchObject({ inserted: 0 });
   });
 
+  it("添付画像は本文に同意している場合のみ別に保存し、不正な形式は捨てる", async () => {
+    const ctx = setup();
+    const png = Buffer.from("fake-image").toString("base64");
+    const images = [
+      { mimeType: "image/png", data: png },
+      { mimeType: "image/svg+xml", data: png },
+      { mimeType: "image/jpeg", data: "not base64!" },
+    ];
+    const p = await activated(ctx);
+    const e = event("user_prompt", { content: { text: "見て", images } });
+    await p.call("/events", { body: { events: [e] } });
+    const saved = (await ctx.store.queryEvents({ participantId: p.id, types: ["user_prompt"] }))[0];
+    expect(saved.content).toEqual({ text: "見て", attachments: `${e.eventId}-0` });
+    expect(await ctx.store.getAttachment(`${e.eventId}-0`)).toMatchObject({ participantId: p.id, mimeType: "image/png", data: png });
+    expect(await ctx.store.getAttachment(`${e.eventId}-1`)).toBeNull();
+
+    const q = await activated(ctx, { use: true, metadata: true, content: false });
+    const e2 = event("user_prompt", { content: { text: "見て", images } });
+    await q.call("/events", { body: { events: [e2] } });
+    expect((await ctx.store.queryEvents({ participantId: q.id }))[0]?.content ?? null).toBeNull();
+    expect(await ctx.store.getAttachment(`${e2.eventId}-0`)).toBeNull();
+
+    await ctx.store.deleteParticipant(p.id);
+    expect(await ctx.store.getAttachment(`${e.eventId}-0`)).toBeNull();
+  });
+
   it("撤回後のイベントは保存しない", async () => {
     const ctx = setup();
     const p = await activated(ctx);

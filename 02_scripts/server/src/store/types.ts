@@ -60,6 +60,18 @@ export interface StoredEvent {
   content: Record<string, string> | null;
 }
 
+/** 参加者が依頼に添付した画像（本文への同意がある場合のみ保存） */
+export interface StoredAttachment {
+  attachmentId: string;
+  participantId: string;
+  eventId: string;
+  mimeType: string;
+  /** base64 */
+  data: string;
+  createdAt: string;
+  expireAt: string;
+}
+
 export interface Usage {
   requests: number;
   tokens: number;
@@ -91,6 +103,10 @@ export interface Store {
   /** 条件に合う直近 limit 件を時系列（古い順）で返す */
   queryEvents(q: EventQuery): Promise<StoredEvent[]>;
   countEvents(participantId: string, sinceIso: string): Promise<number>;
+
+  /** 既存の attachmentId は無視する */
+  insertAttachments(list: StoredAttachment[]): Promise<void>;
+  getAttachment(id: string): Promise<StoredAttachment | null>;
 
   addUsage(key: string, requests: number, tokens: number): Promise<Usage>;
   getUsage(key: string): Promise<Usage>;

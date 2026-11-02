@@ -79,13 +79,27 @@ export function registerDataRoutes(admin: Hono<AdminEnv>, store: Store, config: 
                 <td>{e.type}</td>
                 <td>{e.conversationId ? `${e.conversationId.slice(0, 8)} / ${e.turnIndex ?? ""}` : "—"}</td>
                 <td><pre>{JSON.stringify(e.payload)}</pre></td>
-                <td><pre>{e.content ? [e.content.text, e.content.feedback].filter(Boolean).join("\n---\n").slice(0, 500) : ""}</pre></td>
+                <td>
+                  <pre>{e.content ? [e.content.text, e.content.feedback].filter(Boolean).join("\n---\n").slice(0, 500) : ""}</pre>
+                  {e.content?.attachments?.split(",").map((id, i) => (
+                    <a href={`/admin/attachments/${id}`} target="_blank" rel="noopener">添付画像{i + 1} </a>
+                  ))}
+                </td>
               </tr>
             ))}
           </table>
         </div>
       </Layout>,
     );
+  });
+
+  admin.get("/attachments/:id", async (c) => {
+    const a = await store.getAttachment(c.req.param("id"));
+    if (!a) return c.notFound();
+    c.header("content-type", a.mimeType);
+    c.header("cache-control", "private, no-store");
+    c.header("x-content-type-options", "nosniff");
+    return c.body(Buffer.from(a.data, "base64"));
   });
 
   admin.get("/events.csv", async (c) => {

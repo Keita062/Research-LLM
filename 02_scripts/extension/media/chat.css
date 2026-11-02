@@ -24,3 +24,8 @@ button:disabled{opacity:.5;cursor:default}
 .paused{color:var(--vscode-editorWarning-foreground)}
 .msg pre{background:var(--vscode-textCodeBlock-background);padding:6px;overflow-x:auto;white-space:pre}
 .msg code{font-family:var(--vscode-editor-font-family)}
+.attachments{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:6px}
+.pending{position:relative;display:inline-block}
+.pending .remove{position:absolute;top:-6px;right:-6px;padding:0 5px;border-radius:50%;font-size:11px;line-height:16px}
+.thumbs{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
+.thumb{max-width:96px;max-height:96px;border-radius:3px;border:1px solid var(--vscode-panel-border);object-fit:cover}
