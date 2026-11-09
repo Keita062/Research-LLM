@@ -6,7 +6,7 @@ import type { AppConfig } from "./config.js";
 import { sanitizeEvents } from "./events.js";
 import { LlmError, type LlmClient } from "./llm.js";
 import type { Consent, Participant, Store } from "./store/types.js";
-import { dayKey, newToken, normalizeInviteCode, sha256 } from "./util.js";
+import { dayKey, newToken, nextDayStart, normalizeInviteCode, sha256 } from "./util.js";
 
 type Env = { Variables: { participant: Participant } };
 
@@ -77,6 +77,8 @@ export function createApi({ store, llm, config, now = () => new Date() }: ApiDep
         tokensToday: usage.tokens,
         requestsPerDay: settings.perUserRequestsPerDay,
         tokensPerDay: settings.perUserTokensPerDay,
+        // 回数が 0 に戻る時刻。拡張の画面に表示する
+        resetsAt: nextDayStart(now(), config.usageTimeZone).toISOString(),
       },
     };
   };

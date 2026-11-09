@@ -48,9 +48,13 @@ describe("参加者API", () => {
     expect(res.status).toBe(200);
     const lines = (await res.text()).trim().split("\n").map((l) => JSON.parse(l));
     expect(lines.at(-1).type).toBe("done");
-    const st = (await (await p.call("/status")).json()) as { usage: { requestsToday: number; tokensToday: number } };
+    const st = (await (await p.call("/status")).json()) as { usage: { requestsToday: number; tokensToday: number; resetsAt: string } };
     expect(st.usage.requestsToday).toBe(1);
     expect(st.usage.tokensToday).toBeGreaterThan(0);
+    // リセット時刻は今から 25 時間以内の未来
+    const untilReset = Date.parse(st.usage.resetsAt) - Date.now();
+    expect(untilReset).toBeGreaterThan(0);
+    expect(untilReset).toBeLessThanOrEqual(25 * 3_600_000);
   });
 
   it("管理者停止・全体停止で利用できない", async () => {
