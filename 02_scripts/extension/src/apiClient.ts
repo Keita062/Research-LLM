@@ -30,7 +30,8 @@ export interface Status {
   consent: (Consent & { updatedAt: string }) | null;
   model: string;
   minExtensionVersion: string;
-  usage: { requestsToday: number; tokensToday: number; requestsPerDay: number; tokensPerDay: number };
+  /** resetsAt は回数が 0 に戻る時刻（ISO 形式）。古いサーバーは返さない */
+  usage: { requestsToday: number; tokensToday: number; requestsPerDay: number; tokensPerDay: number; resetsAt?: string };
 }
 
 export type ChatChunk =

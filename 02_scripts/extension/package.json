@@ -2,7 +2,7 @@
   "name": "research-llm-agent",
   "displayName": "Research LLM Agent",
   "description": "研究用コーディングエージェント（卒業研究のログ収集に協力いただく参加者向け）",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "research-llm",
   "private": true,
   "license": "UNLICENSED",
