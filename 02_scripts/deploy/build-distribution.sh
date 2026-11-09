@@ -31,5 +31,7 @@ chmod +x "$OUT/$NAME/install.command"
 cp "$ROOT/01_docs/参加者向け手順書.md" "$OUT/$NAME/はじめにお読みください.md"
 cd "$OUT"
 rm -f "$NAME.zip"
-if command -v zip >/dev/null; then zip -qr "$NAME.zip" "$NAME"; else powershell -NoProfile -Command "Compress-Archive -Path '$NAME' -DestinationPath '$NAME.zip'"; fi
+# macOS 用の実行権限と日本語のファイル名を正しく入れるため、zip コマンドは使わない（理由は make-zip.mjs）
+# Git Bash の /c/... 形式のパスは Node が解決できないため、相対パスで渡す
+node ../make-zip.mjs "$NAME.zip" "$NAME"
 echo "作成しました: $OUT/$NAME.zip（サーバー: $SERVER_URL）"
