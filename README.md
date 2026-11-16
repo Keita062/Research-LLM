@@ -24,6 +24,20 @@
 | サーバーのリビジョン | `research-llm-00006-f77` |
 | 参加者への配布・実データの収集開始 | 研究者が判断して行う（エージェントは独断で行わない） |
 
+## アプリURL
+
+| 用途 | URL | 利用者 |
+|---|---|---|
+| 管理画面 | https://research-llm-ugljnvagka-an.a.run.app/admin | 研究者（`ADMIN_EMAILS` に登録した Google アカウントのみログイン可） |
+| 研究用サーバー（API） | https://research-llm-ugljnvagka-an.a.run.app | VS Code 拡張機能が接続する（配布する `.vsix` に埋め込み済み。参加者がブラウザで開く必要はない） |
+| 稼働確認 | https://research-llm-ugljnvagka-an.a.run.app/health | `ok` が返れば稼働中 |
+
+URL は Cloud Run の再デプロイでは変わらない。変わった場合は次のコマンドで確認する（[運用手順書](01_docs/運用手順書.md)）。
+
+```bash
+gcloud run services describe research-llm --project research-llm-512715 --region asia-northeast1 --format="value(status.url)"
+```
+
 ## 卒論テーマ
 
 **AIコーディングエージェントと人間の相互作用が、1つの依頼の中でどう展開し、利用期間を通じてどう変化するか**
@@ -46,7 +60,7 @@ AIコーディングエージェントと人間の相互作用が、1つの依�
 
 RQ に答えるには、参加者が普段の開発（VS Code／Unity／Processing）でエージェントをどう使ったかを、行動単位で継続的に記録する必要がある。市販のエージェント（Claude Code、GitHub Copilot など）では、AI の提案を**承認したか・拒否したか・修正を指示したか**といった行動を、研究に必要な粒度で取り出しにくい。そのため、エージェントを自作し、操作と同時にイベントを記録する。参加者がログを提出する作業は不要。
 
-## 構成
+## システム構成
 
 | 構成要素 | 内容 | 場所 |
 |---|---|---|
