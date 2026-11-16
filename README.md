@@ -33,34 +33,7 @@ AIコーディングエージェントと人間の相互作用が、1つの依�
 
 ## アーキテクチャ
 
-```mermaid
-flowchart LR
-  subgraph PC["参加者のPC"]
-    EXT["VS Code 拡張機能"]
-  end
-  subgraph GCP["Google Cloud"]
-    API["研究用サーバー<br/>（Cloud Run）"]
-    ADM["管理画面<br/>（Cloud Run）"]
-    DB[("Firestore")]
-    API --> DB
-    ADM --> DB
-  end
-  GEM["Gemini API"]
-  RES["研究者"]
-
-  EXT -- "依頼・ログ" --> API
-  API -- "依頼を中継" --> GEM
-  RES --> ADM
-```
-
-<table>
-  <tr>
-    <td align="center"><img src="01_docs/images/google-cloud.svg" height="40" alt="Google Cloud"><br>Google Cloud</td>
-    <td align="center"><img src="01_docs/images/google-cloud-run.svg" height="40" alt="Cloud Run"><br>Cloud Run</td>
-    <td align="center"><img src="01_docs/images/firebase.svg" height="40" alt="Firestore"><br>Firestore</td>
-    <td align="center"><img src="01_docs/images/google-gemini.svg" height="40" alt="Gemini API"><br>Gemini API</td>
-  </tr>
-</table>
+<img src="01_docs/images/architecture.svg" alt="アーキテクチャ図" width="100%">
 
 ## フォルダ構成
 
